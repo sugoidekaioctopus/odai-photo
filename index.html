@@ -19,6 +19,7 @@ img.ph{width:100%;border-radius:10px;display:block;max-height:380px;object-fit:c
 .score{font-size:32px;font-weight:700;color:var(--acc)}.row{display:flex;gap:8px;align-items:center}.row>*{flex:1}
 .vote button.on.y{background:var(--ok);color:#fff}.vote button.on.n{background:var(--ng);color:#fff}
 #qr{display:flex;justify-content:center;margin:10px 0}
+.judge{display:flex;gap:10px;align-items:center;margin:8px 0}.judge img,.emo{width:72px;height:72px;object-fit:contain;display:block}.emo{font-size:48px;line-height:72px;text-align:center}.bubble{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:8px 12px;flex:1}
 .big{font-size:20px;padding:16px}.code{font-size:34px;letter-spacing:6px;font-weight:700;text-align:center}
 </style></head><body><main id="app"></main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
@@ -30,6 +31,9 @@ const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'
 const ERR={'room not found':'合言葉の部屋が見つかりません','room full':'この部屋は満員です','host only':'幹事だけができる操作です','round already open':'いまのラウンドを先に公開してください','round closed':'時間切れです','already submitted':'このラウンドは投稿済みです','daily limit':'本日のAI採点の上限に達しました','scoring failed':'採点に失敗しました。もう一度どうぞ','not a member':'ルームに参加していません'};
 let me=null,roomId=localStorage.getItem('room'),D={},urls={},sig='',msg='',busy=false,timer=null;
 const draft={theme:'',secs:120,code:new URLSearchParams(location.search).get('r')||'',nick:localStorage.getItem('nick')||''};
+const CHARA={name:'審査員さん'},EMO=['😱','😕','😐','🙂','😍'];
+const fb=(el,k)=>{const s=document.createElement('span');s.className='emo';s.textContent=EMO[k-1];el.replaceWith(s)};
+const faceImg=sc=>{const k=sc>=90?5:sc>=70?4:sc>=50?3:sc>=30?2:1;return `<img src="chara-${k}.png" alt="" onerror="fb(this,${k})">`};
 const fail=e=>ERR[e&&e.message]||(e&&e.message)||'失敗しました';
 
 async function boot(){
@@ -85,7 +89,7 @@ function roomView(){
     const vs=D.votes.filter(v=>v.submission_id===s.id),y=vs.filter(v=>v.value===1).length,n=vs.length-y,m=(vs.find(v=>v.user_id===me)||{}).value,own=s.user_id===me;
     return `<div class="card"><img class="ph" src="${urls[s.image_path]||''}" alt="">
     <div class="row" style="margin-top:8px"><span><b>${i+1}位</b> ${esc(name(s.user_id))}</span><span class="score" style="text-align:right">${s.score}<small> 点</small></span></div>
-    <div>💬 ${esc(s.comment)}</div>
+    <div class="judge"><div>${faceImg(s.score)}<div class="meta" style="text-align:center">${esc(CHARA.name)}</div></div><div class="bubble">${esc(s.comment)}</div></div>
     <div class="row vote"><button class="y ${m===1?'on':''}" data-s="${s.id}" data-v="1" ${own?'disabled':''}>👍 納得 ${y}</button><button class="n ${m===-1?'on':''}" data-s="${s.id}" data-v="-1" ${own?'disabled':''}>👎 不満 ${n}</button></div></div>`}).join('')||'<div class="card meta">投稿がありませんでした</div>';
   h+=`<div class="card"><b>累計ランキング</b>${totals()}</div>`;
   return h+(host?`<div class="card"><b>次のラウンド</b>${form('次のラウンド開始')}<button id="fin">ゲームを終了する</button></div>`:'<div class="card meta">幹事が次のお題を決めるのを待っています…</div>');
