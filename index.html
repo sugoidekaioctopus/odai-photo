@@ -30,7 +30,8 @@ img.ph{width:100%;border-radius:10px;display:block;max-height:380px;object-fit:c
 .fx-up img,.fx-up .emo{animation:bounce .8s 2}.fx-down img,.fx-down .emo{animation:shake .5s 3}
 @media (prefers-reduced-motion:reduce){.fx-up *,.fx-down *,.drum{animation:none!important}}
 </style></head><body><main id="app"></main>
-<div class="meta" style="text-align:center;padding:0 0 24px">📸 写真はゲーム終了の約1時間後(終了しない場合は12時間後)に自動で削除されます<br>画面の版: 2026-10-24 d</div>
+<div class="meta" style="text-align:center;padding:0 0 24px">📸 写真はゲーム終了の約1時間後(終了しない場合は12時間後)に自動で削除されます<br>画面の版: 2026-10-24 e</div>
+<script src="config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
@@ -72,16 +73,16 @@ function revealFx(rid){
     if(best>=70){play('fan');confetti(best>=90?220:120)}else if(best<50)play('sad')},2900)}
 const fail=e=>ERR[e&&e.message]||(e&&e.message)||'失敗しました';
 
-const TS_KEY=''; // ← Cloudflare Turnstile の「サイトキー」(公開してよい値)を入れる。空ならCAPTCHAなし
+const TS_KEY=(window.APP_CONFIG||{}).TS_KEY||''; // サイトキーは config.js に書く(空ならCAPTCHAなし)
 function captcha(){return new Promise((res,rej)=>{
   if(!TS_KEY)return res(null);
   app.innerHTML='<div class="card meta">確認中…<div id="cap"></div></div>';
   const s=document.createElement('script');s.src='https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
   s.onload=()=>turnstile.render('#cap',{sitekey:TS_KEY,appearance:'interaction-only',callback:t=>res(t),'error-callback':()=>rej(new Error('captcha'))});
-  s.onerror=()=>rej(new Error('captcha'));document.head.appendChild(s)})}
+  s.onerror=()=>rej(new Error('captcha'));setTimeout(()=>rej(new Error('captcha timeout')),20000);document.head.appendChild(s)})}
 async function boot(){
   let {data:{session}}=await sb.auth.getSession();
-  if(!session){const tk=await captcha().catch(()=>null);const r=await sb.auth.signInAnonymously(tk?{options:{captchaToken:tk}}:undefined);if(r.error){app.innerHTML='<div class="card">接続できませんでした。匿名ログインの設定を確認してください。<br><small>'+esc(r.error.message)+'</small></div>';return}session=r.data.session}
+  if(!session){const tk=await captcha().catch(()=>null);const r=await sb.auth.signInAnonymously(tk?{options:{captchaToken:tk}}:undefined);if(r.error){app.innerHTML='<div class="card">'+(/captcha/i.test(r.error.message)?'確認(CAPTCHA)に失敗しました。ページを再読み込みしてください。':'接続できませんでした。匿名ログインの設定を確認してください。')+'<br><small>'+esc(r.error.message)+'</small></div>';return}session=r.data.session}
   me=session.user.id;if(roomId)await load();else render(true);
   setInterval(()=>{if(roomId&&!busy)load()},3000);
 }
