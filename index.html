@@ -22,8 +22,15 @@ img.ph{width:100%;border-radius:10px;display:block;max-height:380px;object-fit:c
 .judge{display:flex;gap:10px;align-items:center;margin:8px 0}.judge img,.emo{width:72px;height:72px;object-fit:contain;display:block}.emo{font-size:48px;line-height:72px;text-align:center}.bubble{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:8px 12px;flex:1}
 .big{font-size:20px;padding:16px}.code{font-size:34px;letter-spacing:6px;font-weight:700;text-align:center}
 .pick{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}.avb{width:44px;height:44px;padding:0;margin:0;font-size:24px}.avb.on{border-color:var(--acc);background:var(--bg);box-shadow:0 0 0 2px var(--acc)}.av{font-size:20px}img.av{width:24px;height:24px;border-radius:50%;vertical-align:middle;object-fit:cover}
+.ov{position:fixed;inset:0;z-index:40;background:var(--bg);display:flex;align-items:center;justify-content:center;text-align:center}
+.drum{font-size:80px;animation:pulse .3s infinite alternate}.big{font-size:28px;font-weight:700;margin-top:8px}
+@keyframes pulse{to{transform:scale(1.2) rotate(8deg)}}
+@keyframes bounce{0%,100%{transform:none}30%{transform:translateY(-14px)}60%{transform:none}80%{transform:translateY(-6px)}}
+@keyframes shake{0%,100%{transform:none}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.fx-up img,.fx-up .emo{animation:bounce .8s 2}.fx-down img,.fx-down .emo{animation:shake .5s 3}
+@media (prefers-reduced-motion:reduce){.fx-up *,.fx-down *,.drum{animation:none!important}}
 </style></head><body><main id="app"></main>
-<div class="meta" style="text-align:center;padding:0 0 24px">📸 写真はゲーム終了の約1時間後(終了しない場合は12時間後)に自動で削除されます<br>画面の版: 2026-10-24 c</div>
+<div class="meta" style="text-align:center;padding:0 0 24px">📸 写真はゲーム終了の約1時間後(終了しない場合は12時間後)に自動で削除されます<br>画面の版: 2026-10-24 d</div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
@@ -43,9 +50,29 @@ const ava=id=>av((D.players.find(p=>p.user_id===id)||{}).avatar);
 const sync=()=>{const n=draft.nick.trim(),j=$('#jn'),m=$('#mk');
   if(j){j.disabled=!n||!draft.code;j.textContent=n?n+'として参加する':'名前を入力してください'}
   if(m){m.disabled=!n;m.textContent=n?'ルームを作る(幹事)':'名前を入力してください'}};
+let fxUntil=0;const seen={};
+let AC=null;const snd=()=>localStorage.getItem('snd')!=='off';
+function ac(){try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();if(AC.state==='suspended')AC.resume()}catch(e){}return AC}
+document.addEventListener('pointerdown',()=>ac(),{once:true});
+function tone(f,t0,d,type='sine',v=.2){const a=ac();if(!a)return;const o=a.createOscillator(),g=a.createGain(),t=a.currentTime+t0;o.type=type;o.frequency.value=f;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(v,t+.01);g.gain.exponentialRampToValueAtTime(.001,t+d);o.connect(g).connect(a.destination);o.start(t);o.stop(t+d+.05)}
+function noise(t0,d,v=.15,hp=800){const a=ac();if(!a)return;const n=a.sampleRate*d,b=a.createBuffer(1,n,a.sampleRate),c=b.getChannelData(0);for(let i=0;i<n;i++)c[i]=Math.random()*2-1;const s=a.createBufferSource(),g=a.createGain(),f=a.createBiquadFilter(),t=a.currentTime+t0;f.type='highpass';f.frequency.value=hp;s.buffer=b;g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.001,t+d);s.connect(f).connect(g).connect(a.destination);s.start(t)}
+const SFX={drum(){let t=0,gap=.16;while(t<2.8){tone(110,t,.12,'triangle',.25);noise(t,.06,.08,2000);t+=gap;gap=Math.max(.04,gap*.93)}},
+ crash(){noise(0,1.2,.25,3000)},fan(){[523,659,784,1047].forEach((f,i)=>tone(f,i*.12,.5,'triangle',.22));tone(1047,.5,.8,'square',.1)},
+ sad(){[392,370,349,330].forEach((f,i)=>tone(f,i*.3,.45,'sawtooth',.12))},pop(){tone(660,0,.08,'sine',.2);tone(880,.06,.1,'sine',.2)}};
+const play=n=>{if(snd())SFX[n]()};
+function confetti(n){if(matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+  const c=document.createElement('canvas');c.style.cssText='position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:50';c.width=innerWidth;c.height=innerHeight;document.body.appendChild(c);
+  const x=c.getContext('2d'),cols=['#e8590c','#f59f00','#2b8a3e','#1c7ed6','#d6336c','#7048e8'];
+  const P=Array.from({length:n},()=>({x:Math.random()*c.width,y:-20-Math.random()*c.height*.5,w:6+Math.random()*6,h:8+Math.random()*8,vy:2+Math.random()*4,vx:(Math.random()-.5)*3,r:Math.random()*6,vr:(Math.random()-.5)*.3,c:cols[Math.random()*6|0]}));
+  let f=0;(function loop(){x.clearRect(0,0,c.width,c.height);P.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.r+=p.vr;x.save();x.translate(p.x,p.y);x.rotate(p.r);x.fillStyle=p.c;x.fillRect(-p.w/2,-p.h/2,p.w,p.h);x.restore()});if(++f<240)requestAnimationFrame(loop);else c.remove()})()}
+function revealFx(rid){
+  const o=document.createElement('div');o.className='ov';o.innerHTML='<div><div class="drum">🥁</div><div class="big">結果発表…</div></div>';document.body.appendChild(o);play('drum');
+  setTimeout(()=>{play('crash');o.remove();fxUntil=Date.now()+3000;render(true);
+    const best=Math.max(0,...(D.subs||[]).filter(s=>s.round_id===rid).map(s=>s.score));
+    if(best>=70){play('fan');confetti(best>=90?220:120)}else if(best<50)play('sad')},2900)}
 const fail=e=>ERR[e&&e.message]||(e&&e.message)||'失敗しました';
 
-const TS_KEY='0x4AAAAAAFj6FZJiHIC-Tmi4'; // ← Cloudflare Turnstile の「サイトキー」(公開してよい値)を入れる。空ならCAPTCHAなし
+const TS_KEY=''; // ← Cloudflare Turnstile の「サイトキー」(公開してよい値)を入れる。空ならCAPTCHAなし
 function captcha(){return new Promise((res,rej)=>{
   if(!TS_KEY)return res(null);
   app.innerHTML='<div class="card meta">確認中…<div id="cap"></div></div>';
@@ -70,7 +97,9 @@ async function load(){
   const need=subs.map(x=>x.image_path).filter(x=>!urls[x]);
   if(need.length){const {data}=await sb.storage.from('photos').createSignedUrls(need,3600);(data||[]).forEach(x=>{if(x.signedUrl)urls[x.path]=x.signedUrl})}
   D={room:r.data,players:p.data||[],rounds:rd.data||[],subs,votes:v.data||[],scores:sc.data||[]};
-  render();
+  const cu=D.rounds[D.rounds.length-1];let fx=null;
+  if(cu){if(seen[cu.id]==='open'&&cu.status==='revealed')fx=cu.id;seen[cu.id]=cu.status}
+  render();if(fx)revealFx(fx);
 }
 function render(force){
   const s=JSON.stringify([D,msg,roomId]);if(!force&&s===sig)return;sig=s;clearInterval(timer);
@@ -87,7 +116,7 @@ const totals=name=>[...D.scores].sort((a,b)=>b.total-a.total).map((x,i)=>`<div c
 function roomView(){
   const R=D.room,host=R.host_id===me,cur=D.rounds[D.rounds.length-1];
   const name=id=>(D.players.find(p=>p.user_id===id)||{}).nickname||'?';
-  let h=`<h1>📷 お題フォト</h1><div class="meta">ルーム <b>${R.code}</b> ・ ${D.players.length}人<button class="sm" id="prof">名前・アバターを変更</button><button class="sm" id="leave">退出</button></div>`+(editing?`<div class="card"><b>名前とアバターを変更</b>${picker()}${nameIn()}<button class="pri" id="saveprof">保存</button></div>`:'');
+  let h=`<h1>📷 お題フォト</h1><div class="meta">ルーム <b>${R.code}</b> ・ ${D.players.length}人<button class="sm" id="sndb">${snd()?'🔊':'🔇'}</button><button class="sm" id="prof">名前・アバターを変更</button><button class="sm" id="leave">退出</button></div>`+(editing?`<div class="card"><b>名前とアバターを変更</b>${picker()}${nameIn()}<button class="pri" id="saveprof">保存</button></div>`:'');
   if(R.status==='finished')return h+`<div class="card"><b>🎉 最終結果</b>${totals()}</div>`;
   if(!cur){
     h+=`<div class="card"><div class="meta">この合言葉かQRで友達を招待</div><div class="code">${R.code}</div><div id="qr"></div>
@@ -106,7 +135,7 @@ function roomView(){
     const vs=D.votes.filter(v=>v.submission_id===s.id),y=vs.filter(v=>v.value===1).length,n=vs.length-y,m=(vs.find(v=>v.user_id===me)||{}).value,own=s.user_id===me;
     return `<div class="card"><img class="ph" src="${urls[s.image_path]||''}" alt="">
     <div class="row" style="margin-top:8px"><span><b>${i+1}位</b> ${ava(s.user_id)} ${esc(name(s.user_id))}</span><span class="score" style="text-align:right">${s.score}<small> 点</small></span></div>
-    <div class="judge"><div>${faceImg(s.score)}<div class="meta" style="text-align:center">${esc(CHARA.name)}</div></div><div class="bubble">${esc(s.comment)}</div></div>
+    <div class="judge ${Date.now()<fxUntil?(s.score>=70?'fx-up':s.score<30?'fx-down':''):''}"><div>${faceImg(s.score)}<div class="meta" style="text-align:center">${esc(CHARA.name)}</div></div><div class="bubble">${esc(s.comment)}</div></div>
     <div class="row vote"><button class="y ${m===1?'on':''}" data-s="${s.id}" data-v="1" ${own?'disabled':''}>👍 納得 ${y}</button><button class="n ${m===-1?'on':''}" data-s="${s.id}" data-v="-1" ${own?'disabled':''}>👎 不満 ${n}</button></div></div>`}).join('')||'<div class="card meta">投稿がありませんでした</div>';
   h+=`<div class="card"><b>累計ランキング</b>${totals()}</div>`;
   return h+(host?`<div class="card"><b>次のラウンド</b>${form('次のラウンド開始')}<button id="fin">ゲームを終了する</button></div>`:'<div class="card meta">幹事が次のお題を決めるのを待っています…</div>');
@@ -129,6 +158,7 @@ function bind(){
   on('#saveprof',()=>{const n=draft.nick.trim();if(!n)return;localStorage.setItem('nick',n);localStorage.setItem('avatar',draft.avatar);act(async()=>{await rpc('update_profile',{p_room:roomId,p_nick:n,p_avatar:draft.avatar});editing=false})});
   document.querySelectorAll('.avb').forEach(b=>b.onclick=()=>{draft.avatar=b.dataset.a;document.querySelectorAll('.avb').forEach(x=>x.classList.toggle('on',x===b))});
   sync();
+  on('#sndb',()=>{localStorage.setItem('snd',snd()?'off':'on');render(true);play('pop')});
   on('#leave',()=>{roomId=null;D={};draft.code='';editing=false;localStorage.removeItem('room');render(true)});
   on('#go',()=>act(async()=>{await rpc('start_round',{p_room:roomId,p_theme:draft.theme,p_seconds:+draft.secs});draft.theme=''}));
   on('#rv',()=>act(()=>rpc('reveal_round',{p_round:cur.id})));
@@ -138,7 +168,7 @@ function bind(){
     const b64=await shrink(f);const {error}=await sb.functions.invoke('score',{body:{round_id:cur.id,image_base64:b64}});
     if(error){let m;try{const j=await error.context.json();m=j.error||j.message||j.msg}catch{}throw new Error(m||('送信に失敗しました('+((error.context&&error.context.status)||error.name)+')'))}},'AIが採点中…')};
   document.querySelectorAll('.vote button').forEach(b=>b.onclick=()=>act(async()=>{
-    const sid=b.dataset.s,v=+b.dataset.v,m=(D.votes.find(x=>x.submission_id===sid&&x.user_id===me)||{}).value;
+    play('pop');const sid=b.dataset.s,v=+b.dataset.v,m=(D.votes.find(x=>x.submission_id===sid&&x.user_id===me)||{}).value;
     const r=m===v?await sb.from('votes').delete().eq('submission_id',sid).eq('user_id',me):await sb.from('votes').upsert({submission_id:sid,user_id:me,value:v},{onConflict:'submission_id,user_id'});
     if(r.error)throw r.error}));
   const qr=$('#qr');if(qr&&window.QRCode)new QRCode(qr,{text:location.origin+location.pathname+'?r='+D.room.code,width:180,height:180});
