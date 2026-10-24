@@ -23,6 +23,7 @@ img.ph{width:100%;border-radius:10px;display:block;max-height:380px;object-fit:c
 .big{font-size:20px;padding:16px}.code{font-size:34px;letter-spacing:6px;font-weight:700;text-align:center}
 .pick{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}.avb{width:44px;height:44px;padding:0;margin:0;font-size:24px}.avb.on{border-color:var(--acc);background:var(--bg);box-shadow:0 0 0 2px var(--acc)}.av{font-size:20px}img.av{width:24px;height:24px;border-radius:50%;vertical-align:middle;object-fit:cover}
 </style></head><body><main id="app"></main>
+<div class="meta" style="text-align:center;padding:0 0 24px">画面の版: 2026-10-24 b</div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
@@ -79,7 +80,7 @@ const totals=name=>[...D.scores].sort((a,b)=>b.total-a.total).map((x,i)=>`<div c
 function roomView(){
   const R=D.room,host=R.host_id===me,cur=D.rounds[D.rounds.length-1];
   const name=id=>(D.players.find(p=>p.user_id===id)||{}).nickname||'?';
-  let h=`<h1>📷 お題フォト</h1><div class="meta">ルーム <b>${R.code}</b> ・ ${D.players.length}人<button class="sm" id="prof">名前・アバター</button><button class="sm" id="leave">退出</button></div>`+(editing?`<div class="card"><b>名前とアバターを変更</b>${picker()}${nameIn()}<button class="pri" id="saveprof">保存</button></div>`:'');
+  let h=`<h1>📷 お題フォト</h1><div class="meta">ルーム <b>${R.code}</b> ・ ${D.players.length}人<button class="sm" id="prof">名前・アバターを変更</button><button class="sm" id="leave">退出</button></div>`+(editing?`<div class="card"><b>名前とアバターを変更</b>${picker()}${nameIn()}<button class="pri" id="saveprof">保存</button></div>`:'');
   if(R.status==='finished')return h+`<div class="card"><b>🎉 最終結果</b>${totals()}</div>`;
   if(!cur){
     h+=`<div class="card"><div class="meta">この合言葉かQRで友達を招待</div><div class="code">${R.code}</div><div id="qr"></div>
