@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>お題フォト</title>
+<style>
+:root{--bg:#faf8f4;--fg:#1d1b18;--mut:#6f6a62;--card:#fff;--line:#e6e1d8;--acc:#e8590c;--ok:#2b8a3e;--ng:#c92a2a;color-scheme:light dark}
+@media (prefers-color-scheme:dark){:root{--bg:#171513;--fg:#f2eee8;--mut:#a39d93;--card:#211f1c;--line:#34312c;--acc:#ff8a4c;--ok:#69db7c;--ng:#ff8787}}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.6 "Hiragino Sans","Noto Sans JP",sans-serif}
+main{max-width:520px;margin:0 auto;padding:16px;padding-bottom:60px}
+h1{font-size:20px;margin:4px 0 10px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:14px}
+input,select,button{font:inherit;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--fg);padding:10px 12px;width:100%;box-sizing:border-box;margin:4px 0}
+button{cursor:pointer}button.pri{background:var(--acc);border-color:var(--acc);color:#fff;font-weight:700}
+button.sm{width:auto;padding:2px 10px;font-size:12px;margin:0 0 0 8px}button:disabled{opacity:.5}
+.meta{font-size:13px;color:var(--mut)}.theme{font-size:26px;font-weight:700;color:var(--acc);margin:4px 0}
+.chip{display:inline-block;background:var(--bg);border:1px solid var(--line);border-radius:999px;padding:2px 12px;margin:2px;font-size:14px}
+.toast{background:var(--acc);color:#fff;border-radius:10px;padding:8px 12px;margin-bottom:12px;font-size:14px}
+img.ph{width:100%;border-radius:10px;display:block;max-height:380px;object-fit:cover}
+.score{font-size:32px;font-weight:700;color:var(--acc)}.row{display:flex;gap:8px;align-items:center}.row>*{flex:1}
+.vote button.on.y{background:var(--ok);color:#fff}.vote button.on.n{background:var(--ng);color:#fff}
+#qr{display:flex;justify-content:center;margin:10px 0}
+.big{font-size:20px;padding:16px}.code{font-size:34px;letter-spacing:6px;font-weight:700;text-align:center}
+</style></head><body><main id="app"></main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+const sb=supabase.createClient('https://fcrsgxcmcgkvogjttdar.supabase.co','sb_publishable_qQslyhZGP5kF0OZ_mlGdKg_PKk0c2b4');
+const $=s=>document.querySelector(s),app=$('#app');
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const ERR={'room not found':'合言葉の部屋が見つかりません','room full':'この部屋は満員です','host only':'幹事だけができる操作です','round already open':'いまのラウンドを先に公開してください','round closed':'時間切れです','already submitted':'このラウンドは投稿済みです','daily limit':'本日のAI採点の上限に達しました','scoring failed':'採点に失敗しました。もう一度どうぞ','not a member':'ルームに参加していません'};
+let me=null,roomId=localStorage.getItem('room'),D={},urls={},sig='',msg='',busy=false,timer=null;
+const draft={theme:'',secs:120,code:new URLSearchParams(location.search).get('r')||'',nick:localStorage.getItem('nick')||''};
+const fail=e=>ERR[e&&e.message]||(e&&e.message)||'失敗しました';
+
+async function boot(){
+  let {data:{session}}=await sb.auth.getSession();
+  if(!session){const r=await sb.auth.signInAnonymously();if(r.error){app.innerHTML='<div class="card">接続できませんでした。匿名ログインの設定を確認してください。<br><small>'+esc(r.error.message)+'</small></div>';return}session=r.data.session}
+  me=session.user.id;if(roomId)await load();else render(true);
+  setInterval(()=>{if(roomId&&!busy)load()},3000);
+}
+async function load(){
+  const [r,p,rd,s]=await Promise.all([
+    sb.from('rooms').select('*').eq('id',roomId).maybeSingle(),
+    sb.from('players').select('*').eq('room_id',roomId),
+    sb.from('rounds').select('*').eq('room_id',roomId).order('no'),
+    sb.from('submissions').select('*').eq('room_id',roomId)]);
+  if(!r.data){roomId=null;localStorage.removeItem('room');D={};render(true);return}
+  const subs=s.data||[],ids=subs.map(x=>x.id);
+  const [v,sc]=await Promise.all([ids.length?sb.from('votes').select('*').in('submission_id',ids):{data:[]},sb.from('room_scores').select('*').eq('room_id',roomId)]);
+  const need=subs.map(x=>x.image_path).filter(x=>!urls[x]);
+  if(need.length){const {data}=await sb.storage.from('photos').createSignedUrls(need,3600);(data||[]).forEach(x=>{if(x.signedUrl)urls[x.path]=x.signedUrl})}
+  D={room:r.data,players:p.data||[],rounds:rd.data||[],subs,votes:v.data||[],scores:sc.data||[]};
+  render();
+}
+function render(force){
+  const s=JSON.stringify([D,msg,roomId]);if(!force&&s===sig)return;sig=s;clearInterval(timer);
+  app.innerHTML=(msg?`<div class="toast">${esc(msg)}</div>`:'')+(roomId&&D.room?roomView():home());bind();
+}
+const home=()=>`<h1>📷 お題フォト</h1>
+<div class="card"><input id="nick" placeholder="ニックネーム(12文字まで)" maxlength="12" value="${esc(draft.nick)}"><button class="pri" id="mk">ルームを作る(幹事)</button></div>
+<div class="card"><input id="code" placeholder="合言葉(4文字)" maxlength="4" value="${esc(draft.code)}" style="text-transform:uppercase"><button class="pri" id="jn">参加する</button></div>`;
+const form=label=>`<input id="theme" maxlength="40" placeholder="お題(例: 今この場でいちばん丸いもの)" value="${esc(draft.theme)}">
+<select id="secs">${[60,120,180,300].map(n=>`<option value="${n}" ${+draft.secs===n?'selected':''}>制限時間 ${n/60}分</option>`).join('')}</select>
+<button class="pri" id="go">${label}</button>`;
+const totals=name=>[...D.scores].sort((a,b)=>b.total-a.total).map((x,i)=>`<div class="row"><span>${i?i+1+'位':'🏆'} ${esc(x.nickname)}</span><span style="text-align:right"><b>${x.total}</b>点</span></div>`).join('')||'<div class="meta">まだありません</div>';
+function roomView(){
+  const R=D.room,host=R.host_id===me,cur=D.rounds[D.rounds.length-1];
+  const name=id=>(D.players.find(p=>p.user_id===id)||{}).nickname||'?';
+  let h=`<h1>📷 お題フォト</h1><div class="meta">ルーム <b>${R.code}</b> ・ ${D.players.length}人<button class="sm" id="leave">退出</button></div>`;
+  if(R.status==='finished')return h+`<div class="card"><b>🎉 最終結果</b>${totals()}</div>`;
+  if(!cur){
+    h+=`<div class="card"><div class="meta">この合言葉かQRで友達を招待</div><div class="code">${R.code}</div><div id="qr"></div>
+    <div>${D.players.map(p=>`<span class="chip">${esc(p.nickname)}</span>`).join('')}</div></div>`;
+    return h+(host?`<div class="card"><b>最初のお題</b>${form('ラウンド開始')}</div>`:'<div class="card meta">幹事がお題を決めるのを待っています…</div>');
+  }
+  const mine=D.subs.find(s=>s.round_id===cur.id&&s.user_id===me);
+  if(cur.status==='open'){
+    h+=`<div class="card"><div class="meta">ラウンド${cur.no} ・ 残り <b id="cd"></b></div><div class="theme">${esc(cur.theme)}</div></div>`;
+    h+=mine?'<div class="card">✅ 投稿しました。結果発表を待ちましょう!</div>':`<input type="file" id="pic" accept="image/*" capture hidden><button class="pri big" id="shot">📷 撮って投稿</button>`;
+    return h+(host?'<div class="card"><div class="meta">全員が投稿したら公開します</div><button class="pri" id="rv">結果を公開する</button></div>':'');
+  }
+  const subs=D.subs.filter(s=>s.round_id===cur.id).sort((a,b)=>b.score-a.score);
+  h+=`<div class="card"><div class="meta">ラウンド${cur.no} 結果発表</div><div class="theme">${esc(cur.theme)}</div></div>`;
+  h+=subs.map((s,i)=>{
+    const vs=D.votes.filter(v=>v.submission_id===s.id),y=vs.filter(v=>v.value===1).length,n=vs.length-y,m=(vs.find(v=>v.user_id===me)||{}).value,own=s.user_id===me;
+    return `<div class="card"><img class="ph" src="${urls[s.image_path]||''}" alt="">
+    <div class="row" style="margin-top:8px"><span><b>${i+1}位</b> ${esc(name(s.user_id))}</span><span class="score" style="text-align:right">${s.score}<small> 点</small></span></div>
+    <div>💬 ${esc(s.comment)}</div>
+    <div class="row vote"><button class="y ${m===1?'on':''}" data-s="${s.id}" data-v="1" ${own?'disabled':''}>👍 納得 ${y}</button><button class="n ${m===-1?'on':''}" data-s="${s.id}" data-v="-1" ${own?'disabled':''}>👎 不満 ${n}</button></div></div>`}).join('')||'<div class="card meta">投稿がありませんでした</div>';
+  h+=`<div class="card"><b>累計ランキング</b>${totals()}</div>`;
+  return h+(host?`<div class="card"><b>次のラウンド</b>${form('次のラウンド開始')}<button id="fin">ゲームを終了する</button></div>`:'<div class="card meta">幹事が次のお題を決めるのを待っています…</div>');
+}
+async function act(fn,note){
+  busy=true;msg=note||'';render(true);
+  try{await fn();msg=''}catch(e){msg=fail(e)}
+  busy=false;if(roomId)await load();else render(true);
+}
+const rpc=async(n,a)=>{const {data,error}=await sb.rpc(n,a);if(error)throw error;return data};
+function shrink(f){return new Promise((res,rej)=>{const im=new Image();im.onload=()=>{const k=Math.min(1,1024/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=im.width*k;c.height=im.height*k;c.getContext('2d').drawImage(im,0,0,c.width,c.height);res(c.toDataURL('image/jpeg',.85).split(',')[1])};im.onerror=()=>rej(new Error('画像を読めません'));im.src=URL.createObjectURL(f)})}
+function bind(){
+  const on=(id,fn)=>{const e=$(id);if(e)e.onclick=fn};
+  [['#nick','nick'],['#code','code'],['#theme','theme'],['#secs','secs']].forEach(([s,k])=>{const e=$(s);if(e)e.oninput=e.onchange=()=>draft[k]=e.value});
+  const cur=D.rounds&&D.rounds[D.rounds.length-1];
+  on('#mk',()=>{const n=draft.nick.trim();if(!n){msg='ニックネームを入れてください';render(true);return}localStorage.setItem('nick',n);act(async()=>{roomId=await rpc('create_room',{p_nick:n});localStorage.setItem('room',roomId)})});
+  on('#jn',()=>{const n=draft.nick.trim();if(!n||!draft.code){msg='ニックネームと合言葉を入れてください';render(true);return}localStorage.setItem('nick',n);act(async()=>{roomId=await rpc('join_room',{p_code:draft.code,p_nick:n});localStorage.setItem('room',roomId)})});
+  on('#leave',()=>{roomId=null;D={};localStorage.removeItem('room');render(true)});
+  on('#go',()=>act(async()=>{await rpc('start_round',{p_room:roomId,p_theme:draft.theme,p_seconds:+draft.secs});draft.theme=''}));
+  on('#rv',()=>act(()=>rpc('reveal_round',{p_round:cur.id})));
+  on('#fin',()=>act(()=>rpc('finish_room',{p_room:roomId})));
+  on('#shot',()=>$('#pic').click());
+  const pic=$('#pic');if(pic)pic.onchange=()=>{const f=pic.files[0];if(!f)return;act(async()=>{
+    const b64=await shrink(f);const {error}=await sb.functions.invoke('score',{body:{round_id:cur.id,image_base64:b64}});
+    if(error){let m;try{m=(await error.context.json()).error}catch{}throw new Error(m||'送信に失敗しました')}},'AIが採点中…')};
+  document.querySelectorAll('.vote button').forEach(b=>b.onclick=()=>act(async()=>{
+    const sid=b.dataset.s,v=+b.dataset.v,m=(D.votes.find(x=>x.submission_id===sid&&x.user_id===me)||{}).value;
+    const r=m===v?await sb.from('votes').delete().eq('submission_id',sid).eq('user_id',me):await sb.from('votes').upsert({submission_id:sid,user_id:me,value:v},{onConflict:'submission_id,user_id'});
+    if(r.error)throw r.error}));
+  const qr=$('#qr');if(qr&&window.QRCode)new QRCode(qr,{text:location.origin+location.pathname+'?r='+D.room.code,width:180,height:180});
+  const cd=$('#cd');if(cd&&cur){const tick=()=>{const s=Math.round((new Date(cur.ends_at)-Date.now())/1000);cd.textContent=s>0?Math.floor(s/60)+':'+String(s%60).padStart(2,'0'):'時間切れ'};tick();timer=setInterval(tick,1000)}
+}
+boot();
+</script></body></html>
