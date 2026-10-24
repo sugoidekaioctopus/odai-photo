@@ -45,7 +45,7 @@ const sync=()=>{const n=draft.nick.trim(),j=$('#jn'),m=$('#mk');
   if(m){m.disabled=!n;m.textContent=n?'ルームを作る(幹事)':'名前を入力してください'}};
 const fail=e=>ERR[e&&e.message]||(e&&e.message)||'失敗しました';
 
-const TS_KEY=''; // ← Cloudflare Turnstile の「サイトキー」(公開してよい値)を入れる。空ならCAPTCHAなし
+const TS_KEY='0x4AAAAAAFj6FZJiHIC-Tmi4'; // ← Cloudflare Turnstile の「サイトキー」(公開してよい値)を入れる。空ならCAPTCHAなし
 function captcha(){return new Promise((res,rej)=>{
   if(!TS_KEY)return res(null);
   app.innerHTML='<div class="card meta">確認中…<div id="cap"></div></div>';
