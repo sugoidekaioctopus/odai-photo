@@ -30,11 +30,16 @@ img.ph{width:100%;border-radius:10px;display:block;max-height:380px;object-fit:c
 .fx-up img,.fx-up .emo{animation:bounce .8s 2}.fx-down img,.fx-down .emo{animation:shake .5s 3}
 @media (prefers-reduced-motion:reduce){.fx-up *,.fx-down *,.drum{animation:none!important}}
 </style></head><body><main id="app"></main>
-<div class="meta" style="text-align:center;padding:0 0 24px">📸 写真はゲーム終了の約1時間後(終了しない場合は12時間後)に自動で削除されます<br>画面の版: 2026-10-24 e</div>
+<div class="meta" style="text-align:center;padding:0 0 24px">📸 写真はゲーム終了の約1時間後(終了しない場合は12時間後)に自動で削除されます<br>画面の版: 2026-10-24 f</div>
 <script src="config.js"></script>
+<script src="settings.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
+const CFG=window.SETTINGS||{};
+const CH=Object.assign({name:'審査員さん',dir:'chara/',bands:[90,70,50,30]},CFG.chara);
+const SN=Object.assign({dir:'sounds/',files:{}},CFG.sounds);
+const FX=Object.assign({drumMs:2900,up:70,big:90,sad:50,fall:30},CFG.fx);
 const sb=supabase.createClient('https://fcrsgxcmcgkvogjttdar.supabase.co','sb_publishable_qQslyhZGP5kF0OZ_mlGdKg_PKk0c2b4');
 const $=s=>document.querySelector(s),app=$('#app');
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -42,10 +47,10 @@ const ERR={'room not found':'合言葉の部屋が見つかりません','room f
 let me=null,roomId=localStorage.getItem('room'),D={},urls={},sig='',msg='',busy=false,timer=null;
 const draft={theme:'',secs:120,code:new URLSearchParams(location.search).get('r')||'',nick:localStorage.getItem('nick')||'',avatar:localStorage.getItem('avatar')||'🙂'};
 draft.code=draft.code.toUpperCase();if(draft.code)roomId=null;let editing=false;
-const CHARA={name:'審査員さん'},EMO=['😱','😕','😐','🙂','😍'];
-const fb=(el,k)=>{const s=document.createElement('span');s.className='emo';s.textContent=EMO[k-1];el.replaceWith(s)};
-const faceImg=sc=>{const k=sc>=90?5:sc>=70?4:sc>=50?3:sc>=30?2:1;return `<img src="chara-${k}.png" alt="" onerror="fb(this,${k})">`};
-const AV=['🐱','🐶','🐰','🦊','🐼','🐸','🐵','🦁','🐧','🐙','🦄','🍺','🍕','🎸','🌸','👻'];
+const CHARA={name:CH.name},EMO=['😱','😕','😐','🙂','😍'];
+const fb=(el,k)=>{if(!el.dataset.t){el.dataset.t=1;el.src=`chara-${k}.png`;return}const s=document.createElement('span');s.className='emo';s.textContent=EMO[k-1];el.replaceWith(s)};
+const faceImg=sc=>{const b=CH.bands,k=sc>=b[0]?5:sc>=b[1]?4:sc>=b[2]?3:sc>=b[3]?2:1;return `<img src="${CH.dir}chara-${k}.png" alt="" onerror="fb(this,${k})">`};
+const AV=CFG.avatars||['🐱','🐶','🐰','🦊','🐼','🐸','🐵','🦁','🐧','🐙','🦄','🍺','🍕','🎸','🌸','👻'];
 const av=a=>a&&a.startsWith('img:')?`<img class="av" src="avatars/${esc(a.slice(4))}.png" alt="">`:`<span class="av">${esc(a||'🙂')}</span>`;
 const ava=id=>av((D.players.find(p=>p.user_id===id)||{}).avatar);
 const sync=()=>{const n=draft.nick.trim(),j=$('#jn'),m=$('#mk');
@@ -57,12 +62,11 @@ function ac(){try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();i
 document.addEventListener('pointerdown',()=>ac(),{once:true});
 function tone(f,t0,d,type='sine',v=.2){const a=ac();if(!a)return;const o=a.createOscillator(),g=a.createGain(),t=a.currentTime+t0;o.type=type;o.frequency.value=f;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(v,t+.01);g.gain.exponentialRampToValueAtTime(.001,t+d);o.connect(g).connect(a.destination);o.start(t);o.stop(t+d+.05)}
 function noise(t0,d,v=.15,hp=800){const a=ac();if(!a)return;const n=a.sampleRate*d,b=a.createBuffer(1,n,a.sampleRate),c=b.getChannelData(0);for(let i=0;i<n;i++)c[i]=Math.random()*2-1;const s=a.createBufferSource(),g=a.createGain(),f=a.createBiquadFilter(),t=a.currentTime+t0;f.type='highpass';f.frequency.value=hp;s.buffer=b;g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.001,t+d);s.connect(f).connect(g).connect(a.destination);s.start(t)}
-const SFX={drum(){let t=0,gap=.16;while(t<2.8){tone(110,t,.12,'triangle',.25);noise(t,.06,.08,2000);t+=gap;gap=Math.max(.04,gap*.93)}},
+const SFX={drum(){let t=0,gap=.16;while(t<FX.drumMs/1000-.1){tone(110,t,.12,'triangle',.25);noise(t,.06,.08,2000);t+=gap;gap=Math.max(.04,gap*.93)}},
  crash(){noise(0,1.2,.25,3000)},fan(){[523,659,784,1047].forEach((f,i)=>tone(f,i*.12,.5,'triangle',.22));tone(1047,.5,.8,'square',.1)},
  sad(){[392,370,349,330].forEach((f,i)=>tone(f,i*.3,.45,'sawtooth',.12))},pop(){tone(660,0,.08,'sine',.2);tone(880,.06,.1,'sine',.2)}};
-const FILES={drum:'se-drum.mp3',crash:'se-crash.mp3',fan:'se-fan.mp3',sad:'se-sad.mp3',pop:'se-pop.mp3'};
 const BUF={};
-async function loadSe(){const a=ac();if(!a)return;for(const[k,u]of Object.entries(FILES)){try{const r=await fetch(u);BUF[k]=await a.decodeAudioData(await r.arrayBuffer())}catch(e){}}}
+async function loadSe(){const a=ac();if(!a)return;for(const[k,f]of Object.entries(SN.files)){try{const r=await fetch(SN.dir+f);if(!r.ok)continue;BUF[k]=await a.decodeAudioData(await r.arrayBuffer())}catch(e){}}}
 document.addEventListener('pointerdown',loadSe,{once:true});
 const play=n=>{if(!snd())return;const a=ac();if(BUF[n]&&a){const s=a.createBufferSource();s.buffer=BUF[n];s.connect(a.destination);s.start()}else SFX[n]()};
 function confetti(n){if(matchMedia('(prefers-reduced-motion: reduce)').matches)return;
@@ -74,7 +78,7 @@ function revealFx(rid){
   const o=document.createElement('div');o.className='ov';o.innerHTML='<div><div class="drum">🥁</div><div class="big">結果発表…</div></div>';document.body.appendChild(o);play('drum');
   setTimeout(()=>{play('crash');o.remove();fxUntil=Date.now()+3000;render(true);
     const best=Math.max(0,...(D.subs||[]).filter(s=>s.round_id===rid).map(s=>s.score));
-    if(best>=70){play('fan');confetti(best>=90?220:120)}else if(best<50)play('sad')},2900)}
+    if(best>=FX.up){play('fan');confetti(best>=FX.big?220:120)}else if(best<FX.sad)play('sad')},FX.drumMs)}
 const fail=e=>ERR[e&&e.message]||(e&&e.message)||'失敗しました';
 
 const TS_KEY=(window.APP_CONFIG||{}).TS_KEY||''; // サイトキーは config.js に書く(空ならCAPTCHAなし)
@@ -140,7 +144,7 @@ function roomView(){
     const vs=D.votes.filter(v=>v.submission_id===s.id),y=vs.filter(v=>v.value===1).length,n=vs.length-y,m=(vs.find(v=>v.user_id===me)||{}).value,own=s.user_id===me;
     return `<div class="card"><img class="ph" src="${urls[s.image_path]||''}" alt="">
     <div class="row" style="margin-top:8px"><span><b>${i+1}位</b> ${ava(s.user_id)} ${esc(name(s.user_id))}</span><span class="score" style="text-align:right">${s.score}<small> 点</small></span></div>
-    <div class="judge ${Date.now()<fxUntil?(s.score>=70?'fx-up':s.score<30?'fx-down':''):''}"><div>${faceImg(s.score)}<div class="meta" style="text-align:center">${esc(CHARA.name)}</div></div><div class="bubble">${esc(s.comment)}</div></div>
+    <div class="judge ${Date.now()<fxUntil?(s.score>=FX.up?'fx-up':s.score<FX.fall?'fx-down':''):''}"><div>${faceImg(s.score)}<div class="meta" style="text-align:center">${esc(CHARA.name)}</div></div><div class="bubble">${esc(s.comment)}</div></div>
     <div class="row vote"><button class="y ${m===1?'on':''}" data-s="${s.id}" data-v="1" ${own?'disabled':''}>👍 納得 ${y}</button><button class="n ${m===-1?'on':''}" data-s="${s.id}" data-v="-1" ${own?'disabled':''}>👎 不満 ${n}</button></div></div>`}).join('')||'<div class="card meta">投稿がありませんでした</div>';
   h+=`<div class="card"><b>累計ランキング</b>${totals()}</div>`;
   return h+(host?`<div class="card"><b>次のラウンド</b>${form('次のラウンド開始')}<button id="fin">ゲームを終了する</button></div>`:'<div class="card meta">幹事が次のお題を決めるのを待っています…</div>');
