@@ -10,7 +10,7 @@ window.SETTINGS = {
   // 効果音。sounds/ フォルダに置いたファイルが使われ、無いものは内蔵の合成音になります
   sounds: {
     dir: 'sounds/',
-    files: { drum: 'ドラムロール.mp3', crash: 'ロールの閉め.mp3', fan: 'fanfare.mp3', sad: 'sad.mp3', pop: 'ジャン！.mp3' },
+    files: { drum: 'ドラムロール.mp3', crash: 'ロールの閉め.mp3', fan: 'fanfare.mp3', sad: 'チーン1.mp3', pop: 'ジャン！.mp3' },
   },
   // 演出のタイミングと基準
   fx: {
