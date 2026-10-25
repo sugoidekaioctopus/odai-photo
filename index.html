@@ -32,7 +32,7 @@ img.ph{width:100%;border-radius:10px;display:block;max-height:380px;object-fit:c
 .cat{width:auto;padding:4px 10px;font-size:13px;margin:2px}.cat.on{background:var(--acc);color:#fff;border-color:var(--acc)}.sg{text-align:left;margin:4px 0}
 .help{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.55);overflow:auto;padding:16px}.help .card{max-width:520px;margin:0 auto}.help li{margin:6px 0;font-size:14px}
 </style></head><body><main id="app"></main>
-<div class="meta" style="text-align:center;padding:0 0 24px">📸 写真はゲーム終了の約1時間後(終了しない場合は12時間後)に自動で削除されます<br>画面の版: 2026-10-24 h</div>
+<div class="meta" style="text-align:center;padding:0 0 24px">📸 写真はゲーム終了の約1時間後(終了しない場合は12時間後)に自動で削除されます<br>画面の版: 2026-10-24 i</div>
 <script src="config.js"></script>
 <script src="settings.js"></script>
 <script src="themes.js"></script>
@@ -90,6 +90,48 @@ function showRules(){
   const R=window.RULES||DEFAULT_RULES,o=document.createElement('div');o.className='help';
   o.innerHTML=`<div class="card"><h1 style="margin:0 0 8px">${esc(R.title)}</h1>${R.steps.map((s,i)=>`<div style="margin:12px 0"><b>${esc(s.icon||'')} ${i+1}. ${esc(s.title)}</b><div style="font-size:14px">${esc(s.text)}</div></div>`).join('')}${(R.notes||[]).length?`<hr style="border:0;border-top:1px solid var(--line)"><b>ポイント</b><ul style="padding-left:20px;margin:6px 0">${R.notes.map(n=>`<li>${esc(n)}</li>`).join('')}</ul>`:''}<button class="pri" id="hx">閉じる</button></div>`;
   o.onclick=e=>{if(e.target===o||e.target.id==='hx')o.remove()};document.body.appendChild(o)}
+const FF='"Hiragino Sans","Noto Sans JP","Yu Gothic",sans-serif',C={bg:'#faf8f4',fg:'#1d1b18',acc:'#e8590c',mut:'#6f6a62',card:'#ffffff'};
+const loadImg=src=>new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=src});
+const rpath=(x,a,b,w,hh,r)=>{x.beginPath();x.roundRect?x.roundRect(a,b,w,hh,r):x.rect(a,b,w,hh)};
+function lines(x,t,mw,max){const L=[];let l='';for(const ch of t){if(x.measureText(l+ch).width>mw){L.push(l);l=ch}else l+=ch}if(l)L.push(l);if(L.length>max){L.length=max;L[max-1]=L[max-1].slice(0,-1)+'…'}return L}
+async function charaImg(sc){const b=CH.bands,k=sc>=b[0]?5:sc>=b[1]?4:sc>=b[2]?3:sc>=b[3]?2:1;for(const u of [`${CH.dir}chara-${k}.png`,`chara-${k}.png`]){try{return{img:await loadImg(u),k}}catch(e){}}return{img:null,k}}
+const pl=id=>D.players.find(p=>p.user_id===id)||{};
+const avTxt=a=>a&&!a.startsWith('img:')?a+' ':'';
+async function cardSub(s,rank){
+  const {data:blob,error}=await sb.storage.from('photos').download(s.image_path);if(error)throw error;
+  const ph=await loadImg(URL.createObjectURL(blob)),{img,k}=await charaImg(s.score),rd=D.rounds.find(r=>r.id===s.round_id)||{};
+  const c=document.createElement('canvas');c.width=1080;c.height=1440;const x=c.getContext('2d');
+  x.fillStyle=C.bg;x.fillRect(0,0,1080,1440);x.fillStyle=C.acc;x.fillRect(0,0,1080,16);
+  x.fillStyle=C.mut;x.font='bold 34px '+FF;x.fillText('📷 お題フォト',60,80);
+  x.fillStyle=C.fg;x.font='bold 54px '+FF;lines(x,'お題:'+(rd.theme||''),960,2).forEach((t,i)=>x.fillText(t,60,160+i*66));
+  const ar=960/720;let sx=0,sy=0,w=ph.width,hh=ph.height;if(w/hh>ar){w=hh*ar;sx=(ph.width-w)/2}else{hh=w/ar;sy=(ph.height-hh)/2}
+  x.save();rpath(x,60,290,960,720,28);x.clip();x.drawImage(ph,sx,sy,w,hh,60,290,960,720);x.restore();
+  x.fillStyle=C.acc;x.font='bold 140px '+FF;x.fillText(String(s.score),60,1160);const sw=x.measureText(String(s.score)).width;
+  x.font='bold 48px '+FF;x.fillText('点',70+sw,1160);x.textAlign='right';x.fillStyle=C.fg;x.fillText(rank+'位',1020,1160);x.textAlign='left';
+  if(img)x.drawImage(img,60,1200,170,170);else{x.font='120px '+FF;x.fillStyle=C.fg;x.fillText(EMO[k-1],70,1320)}
+  x.fillStyle=C.card;rpath(x,250,1200,770,170,24);x.fill();x.strokeStyle='#e6e1d8';x.lineWidth=3;x.stroke();
+  x.fillStyle=C.fg;x.font='36px '+FF;lines(x,s.comment,720,3).forEach((t,i)=>x.fillText(t,275,1255+i*50));
+  x.fillStyle=C.mut;x.font='32px '+FF;x.fillText(avTxt(pl(s.user_id).avatar)+(pl(s.user_id).nickname||'')+'  ・  審査員: '+CH.name,60,1420);
+  return c}
+function cardFinal(){
+  const rows=[...D.scores].sort((a,b)=>b.total-a.total).slice(0,10),H=330+rows.length*120;
+  const c=document.createElement('canvas');c.width=1080;c.height=H;const x=c.getContext('2d');
+  x.fillStyle=C.bg;x.fillRect(0,0,1080,H);x.fillStyle=C.acc;x.fillRect(0,0,1080,16);
+  x.fillStyle=C.mut;x.font='bold 34px '+FF;x.fillText('📷 お題フォト',60,80);
+  x.fillStyle=C.fg;x.font='bold 72px '+FF;x.fillText('🏆 最終結果',60,190);
+  rows.forEach((r,i)=>{const y=260+i*120;x.fillStyle=i?C.card:'#fff3e8';rpath(x,60,y,960,100,22);x.fill();x.strokeStyle=i?'#e6e1d8':C.acc;x.lineWidth=i?2:5;x.stroke();
+    x.fillStyle=C.fg;x.font='bold 44px '+FF;x.fillText(['🥇','🥈','🥉'][i]||(i+1)+'位',90,y+65);
+    x.font='42px '+FF;x.fillText(avTxt(pl(r.user_id).avatar)+r.nickname,230,y+65);
+    x.textAlign='right';x.fillStyle=C.acc;x.font='bold 48px '+FF;x.fillText(r.total+'点',990,y+65);x.textAlign='left'});
+  x.fillStyle=C.mut;x.font='30px '+FF;x.fillText('審査員: '+CH.name,60,H-40);return c}
+async function showShare(c){
+  const blob=await new Promise(r=>c.toBlob(r,'image/png')),url=URL.createObjectURL(blob),file=new File([blob],'odai-photo.png',{type:'image/png'});
+  const o=document.createElement('div');o.className='help';
+  o.innerHTML=`<div class="card"><img class="ph" src="${url}" alt="" style="max-height:none;object-fit:contain"><div class="meta" style="margin:8px 0">写っている人に確認してからシェアしましょう。画像を長押しして保存もできます。</div><button class="pri" id="shr">📤 シェア</button><button id="sv">⬇ 画像を保存</button><button id="hx">閉じる</button></div>`;
+  const save=()=>{const a=document.createElement('a');a.href=url;a.download='odai-photo.png';a.click()};
+  o.querySelector('#shr').onclick=async()=>{try{if(navigator.canShare&&navigator.canShare({files:[file]}))await navigator.share({files:[file],title:'お題フォト'});else save()}catch(e){}};
+  o.querySelector('#sv').onclick=save;
+  o.onclick=e=>{if(e.target===o||e.target.id==='hx'){o.remove();URL.revokeObjectURL(url)}};document.body.appendChild(o)}
 const fail=e=>ERR[e&&e.message]||(e&&e.message)||'失敗しました';
 
 const TS_KEY=(window.APP_CONFIG||{}).TS_KEY||''; // サイトキーは config.js に書く(空ならCAPTCHAなし)
@@ -141,7 +183,7 @@ function roomView(){
   const R=D.room,host=R.host_id===me,cur=D.rounds[D.rounds.length-1];
   const name=id=>(D.players.find(p=>p.user_id===id)||{}).nickname||'?';
   let h=`<h1>📷 お題フォト${HB}</h1><div class="meta">ルーム <b>${R.code}</b> ・ ${D.players.length}人<button class="sm" id="sndb">${snd()?'🔊':'🔇'}</button><button class="sm" id="prof">名前・アバターを変更</button><button class="sm" id="leave">退出</button></div>`+(editing?`<div class="card"><b>名前とアバターを変更</b>${picker()}${nameIn()}<button class="pri" id="saveprof">保存</button></div>`:'');
-  if(R.status==='finished')return h+`<div class="card"><b>🎉 最終結果</b>${totals()}</div>`;
+  if(R.status==='finished')return h+`<div class="card"><b>🎉 最終結果</b>${totals()}<button class="pri" id="shrf" style="margin-top:8px">📤 結果をシェア</button></div>`;
   if(!cur){
     h+=`<div class="card"><div class="meta">この合言葉かQRで友達を招待</div><div class="code">${R.code}</div><div id="qr"></div>
     <div>${D.players.map(p=>`<span class="chip">${av(p.avatar)} ${esc(p.nickname)}${p.user_id===me?'(あなた)':''}</span>`).join('')}</div></div>`;
@@ -160,7 +202,7 @@ function roomView(){
     return `<div class="card"><img class="ph" src="${urls[s.image_path]||''}" alt="">
     <div class="row" style="margin-top:8px"><span><b>${i+1}位</b> ${ava(s.user_id)} ${esc(name(s.user_id))}</span><span class="score" style="text-align:right">${s.score}<small> 点</small></span></div>
     <div class="judge ${Date.now()<fxUntil?(s.score>=FX.up?'fx-up':s.score<FX.fall?'fx-down':''):''}"><div>${faceImg(s.score)}<div class="meta" style="text-align:center">${esc(CHARA.name)}</div></div><div class="bubble">${esc(s.comment)}</div></div>
-    <div class="row vote"><button class="y ${m===1?'on':''}" data-s="${s.id}" data-v="1" ${own?'disabled':''}>👍 納得 ${y}</button><button class="n ${m===-1?'on':''}" data-s="${s.id}" data-v="-1" ${own?'disabled':''}>👎 不満 ${n}</button></div></div>`}).join('')||'<div class="card meta">投稿がありませんでした</div>';
+    <div class="row vote"><button class="y ${m===1?'on':''}" data-s="${s.id}" data-v="1" ${own?'disabled':''}>👍 納得 ${y}</button><button class="n ${m===-1?'on':''}" data-s="${s.id}" data-v="-1" ${own?'disabled':''}>👎 不満 ${n}</button></div><div style="text-align:right"><button class="sm shr" data-s="${s.id}" data-r="${i+1}">📤 シェア</button></div></div>`}).join('')||'<div class="card meta">投稿がありませんでした</div>';
   h+=`<div class="card"><b>累計ランキング</b>${totals()}</div>`;
   return h+(host?`<div class="card"><b>次のラウンド</b>${form('次のラウンド開始')}<button id="fin">ゲームを終了する</button></div>`:'<div class="card meta">幹事が次のお題を決めるのを待っています…</div>');
 }
@@ -183,6 +225,9 @@ function bind(){
   document.querySelectorAll('.avb').forEach(b=>b.onclick=()=>{draft.avatar=b.dataset.a;document.querySelectorAll('.avb').forEach(x=>x.classList.toggle('on',x===b))});
   sync();
   on('#help',showRules);
+  on('#shrf',async()=>{try{await showShare(cardFinal())}catch(e){msg='画像を作れませんでした';render(true)}});
+  document.querySelectorAll('.shr').forEach(b=>b.onclick=async()=>{const s=D.subs.find(x=>x.id===b.dataset.s);if(!s)return;b.disabled=true;b.textContent='作成中…';
+    try{await showShare(await cardSub(s,+b.dataset.r))}catch(e){msg='画像を作れませんでした';render(true)}b.disabled=false;b.textContent='📤 シェア'});
   on('#sndb',()=>{localStorage.setItem('snd',snd()?'off':'on');render(true);play('pop')});
   on('#leave',()=>{roomId=null;D={};draft.code='';editing=false;localStorage.removeItem('room');render(true)});
   on('#go',()=>act(async()=>{await rpc('start_round',{p_room:roomId,p_theme:draft.theme,p_seconds:+draft.secs});draft.theme='';sug=null}));
