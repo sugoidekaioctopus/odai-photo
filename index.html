@@ -30,11 +30,13 @@ img.ph{width:100%;border-radius:10px;display:block;max-height:380px;object-fit:c
 .fx-up img,.fx-up .emo{animation:bounce .8s 2}.fx-down img,.fx-down .emo{animation:shake .5s 3}
 @media (prefers-reduced-motion:reduce){.fx-up *,.fx-down *,.drum{animation:none!important}}
 .cat{width:auto;padding:4px 10px;font-size:13px;margin:2px}.cat.on{background:var(--acc);color:#fff;border-color:var(--acc)}.sg{text-align:left;margin:4px 0}
+.help{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.55);overflow:auto;padding:16px}.help .card{max-width:520px;margin:0 auto}.help li{margin:6px 0;font-size:14px}
 </style></head><body><main id="app"></main>
-<div class="meta" style="text-align:center;padding:0 0 24px">📸 写真はゲーム終了の約1時間後(終了しない場合は12時間後)に自動で削除されます<br>画面の版: 2026-10-24 g</div>
+<div class="meta" style="text-align:center;padding:0 0 24px">📸 写真はゲーム終了の約1時間後(終了しない場合は12時間後)に自動で削除されます<br>画面の版: 2026-10-24 h</div>
 <script src="config.js"></script>
 <script src="settings.js"></script>
 <script src="themes.js"></script>
+<script src="rules.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
@@ -81,6 +83,13 @@ function revealFx(rid){
   setTimeout(()=>{play('crash');o.remove();fxUntil=Date.now()+3000;render(true);
     const best=Math.max(0,...(D.subs||[]).filter(s=>s.round_id===rid).map(s=>s.score));
     if(best>=FX.up){play('fan');confetti(best>=FX.big?220:120)}else if(best<FX.sad)play('sad')},FX.drumMs)}
+const HB='<button class="sm" id="help" style="float:right;font-size:13px">📖 遊び方</button>';
+const DEFAULT_RULES={title:'📖 遊び方',steps:[{icon:'📷',title:'お題の写真を撮る',text:'幹事が出したお題に合う写真を、制限時間内に撮って投稿します。'},{icon:'🤖',title:'AIが採点',text:'AI審査員が点数とコメントを付けます。'},{icon:'👍',title:'納得か不満か投票',text:'結果発表のあと、採点に投票しよう。'}],notes:[]};
+function showRules(){
+  if($('.help'))return;
+  const R=window.RULES||DEFAULT_RULES,o=document.createElement('div');o.className='help';
+  o.innerHTML=`<div class="card"><h1 style="margin:0 0 8px">${esc(R.title)}</h1>${R.steps.map((s,i)=>`<div style="margin:12px 0"><b>${esc(s.icon||'')} ${i+1}. ${esc(s.title)}</b><div style="font-size:14px">${esc(s.text)}</div></div>`).join('')}${(R.notes||[]).length?`<hr style="border:0;border-top:1px solid var(--line)"><b>ポイント</b><ul style="padding-left:20px;margin:6px 0">${R.notes.map(n=>`<li>${esc(n)}</li>`).join('')}</ul>`:''}<button class="pri" id="hx">閉じる</button></div>`;
+  o.onclick=e=>{if(e.target===o||e.target.id==='hx')o.remove()};document.body.appendChild(o)}
 const fail=e=>ERR[e&&e.message]||(e&&e.message)||'失敗しました';
 
 const TS_KEY=(window.APP_CONFIG||{}).TS_KEY||''; // サイトキーは config.js に書く(空ならCAPTCHAなし)
@@ -118,8 +127,8 @@ function render(force){
 }
 const picker=()=>`<div class="pick">${AV.map(a=>`<button type="button" class="avb ${a===draft.avatar?'on':''}" data-a="${a}">${a}</button>`).join('')}</div>`;
 const nameIn=()=>`<input id="nick" placeholder="ニックネーム(12文字まで)" maxlength="12" value="${esc(draft.nick)}">`;
-const home=()=>draft.code?`<h1>📷 お題フォト</h1><div class="card"><div class="meta">🎉 ルーム <b>${esc(draft.code)}</b> に招待されました</div><b>アバターと名前を決めよう</b>${picker()}${nameIn()}<button class="pri" id="jn"></button><button class="sm" id="other" style="margin:8px 0 0">別のルームを作る/参加する</button></div>`
-:`<h1>📷 お題フォト</h1><div class="card"><b>あなたの名前</b>${picker()}${nameIn()}</div><div class="card"><button class="pri" id="mk"></button></div><div class="card"><div class="meta">友達のルームに入る</div><input id="code" placeholder="合言葉(4文字)" maxlength="4" value="" style="text-transform:uppercase"><button class="pri" id="jn"></button></div>`;
+const home=()=>draft.code?`<h1>📷 お題フォト${HB}</h1><div class="card"><div class="meta">🎉 ルーム <b>${esc(draft.code)}</b> に招待されました</div><b>アバターと名前を決めよう</b>${picker()}${nameIn()}<button class="pri" id="jn"></button><button class="sm" id="other" style="margin:8px 0 0">別のルームを作る/参加する</button></div>`
+:`<h1>📷 お題フォト${HB}</h1><div class="card"><b>あなたの名前</b>${picker()}${nameIn()}</div><div class="card"><button class="pri" id="mk"></button></div><div class="card"><div class="meta">友達のルームに入る</div><input id="code" placeholder="合言葉(4文字)" maxlength="4" value="" style="text-transform:uppercase"><button class="pri" id="jn"></button></div>`;
 const THEMES=window.THEME_LIST||[{name:'おすすめ',items:['今この場でいちばん丸いもの','赤いもの','いちばん驚いた顔','今日を象徴するもの','乾杯の瞬間','ミニチュアに見えるもの']}];
 let cat=0,sug=null;
 function pick(){const used=new Set((D.rounds||[]).map(r=>r.theme)),all=THEMES[cat].items,pool=all.filter(t=>!used.has(t)),x=(pool.length?pool:all).slice();
@@ -131,7 +140,7 @@ const totals=name=>[...D.scores].sort((a,b)=>b.total-a.total).map((x,i)=>`<div c
 function roomView(){
   const R=D.room,host=R.host_id===me,cur=D.rounds[D.rounds.length-1];
   const name=id=>(D.players.find(p=>p.user_id===id)||{}).nickname||'?';
-  let h=`<h1>📷 お題フォト</h1><div class="meta">ルーム <b>${R.code}</b> ・ ${D.players.length}人<button class="sm" id="sndb">${snd()?'🔊':'🔇'}</button><button class="sm" id="prof">名前・アバターを変更</button><button class="sm" id="leave">退出</button></div>`+(editing?`<div class="card"><b>名前とアバターを変更</b>${picker()}${nameIn()}<button class="pri" id="saveprof">保存</button></div>`:'');
+  let h=`<h1>📷 お題フォト${HB}</h1><div class="meta">ルーム <b>${R.code}</b> ・ ${D.players.length}人<button class="sm" id="sndb">${snd()?'🔊':'🔇'}</button><button class="sm" id="prof">名前・アバターを変更</button><button class="sm" id="leave">退出</button></div>`+(editing?`<div class="card"><b>名前とアバターを変更</b>${picker()}${nameIn()}<button class="pri" id="saveprof">保存</button></div>`:'');
   if(R.status==='finished')return h+`<div class="card"><b>🎉 最終結果</b>${totals()}</div>`;
   if(!cur){
     h+=`<div class="card"><div class="meta">この合言葉かQRで友達を招待</div><div class="code">${R.code}</div><div id="qr"></div>
@@ -173,6 +182,7 @@ function bind(){
   on('#saveprof',()=>{const n=draft.nick.trim();if(!n)return;localStorage.setItem('nick',n);localStorage.setItem('avatar',draft.avatar);act(async()=>{await rpc('update_profile',{p_room:roomId,p_nick:n,p_avatar:draft.avatar});editing=false})});
   document.querySelectorAll('.avb').forEach(b=>b.onclick=()=>{draft.avatar=b.dataset.a;document.querySelectorAll('.avb').forEach(x=>x.classList.toggle('on',x===b))});
   sync();
+  on('#help',showRules);
   on('#sndb',()=>{localStorage.setItem('snd',snd()?'off':'on');render(true);play('pop')});
   on('#leave',()=>{roomId=null;D={};draft.code='';editing=false;localStorage.removeItem('room');render(true)});
   on('#go',()=>act(async()=>{await rpc('start_round',{p_room:roomId,p_theme:draft.theme,p_seconds:+draft.secs});draft.theme='';sug=null}));
