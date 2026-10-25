@@ -29,10 +29,12 @@ img.ph{width:100%;border-radius:10px;display:block;max-height:380px;object-fit:c
 @keyframes shake{0%,100%{transform:none}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
 .fx-up img,.fx-up .emo{animation:bounce .8s 2}.fx-down img,.fx-down .emo{animation:shake .5s 3}
 @media (prefers-reduced-motion:reduce){.fx-up *,.fx-down *,.drum{animation:none!important}}
+.cat{width:auto;padding:4px 10px;font-size:13px;margin:2px}.cat.on{background:var(--acc);color:#fff;border-color:var(--acc)}.sg{text-align:left;margin:4px 0}
 </style></head><body><main id="app"></main>
-<div class="meta" style="text-align:center;padding:0 0 24px">📸 写真はゲーム終了の約1時間後(終了しない場合は12時間後)に自動で削除されます<br>画面の版: 2026-10-24 f</div>
+<div class="meta" style="text-align:center;padding:0 0 24px">📸 写真はゲーム終了の約1時間後(終了しない場合は12時間後)に自動で削除されます<br>画面の版: 2026-10-24 g</div>
 <script src="config.js"></script>
 <script src="settings.js"></script>
+<script src="themes.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
@@ -118,9 +120,13 @@ const picker=()=>`<div class="pick">${AV.map(a=>`<button type="button" class="av
 const nameIn=()=>`<input id="nick" placeholder="ニックネーム(12文字まで)" maxlength="12" value="${esc(draft.nick)}">`;
 const home=()=>draft.code?`<h1>📷 お題フォト</h1><div class="card"><div class="meta">🎉 ルーム <b>${esc(draft.code)}</b> に招待されました</div><b>アバターと名前を決めよう</b>${picker()}${nameIn()}<button class="pri" id="jn"></button><button class="sm" id="other" style="margin:8px 0 0">別のルームを作る/参加する</button></div>`
 :`<h1>📷 お題フォト</h1><div class="card"><b>あなたの名前</b>${picker()}${nameIn()}</div><div class="card"><button class="pri" id="mk"></button></div><div class="card"><div class="meta">友達のルームに入る</div><input id="code" placeholder="合言葉(4文字)" maxlength="4" value="" style="text-transform:uppercase"><button class="pri" id="jn"></button></div>`;
-const form=label=>`<input id="theme" maxlength="40" placeholder="お題(例: 今この場でいちばん丸いもの)" value="${esc(draft.theme)}">
+const THEMES=window.THEME_LIST||[{name:'おすすめ',items:['今この場でいちばん丸いもの','赤いもの','いちばん驚いた顔','今日を象徴するもの','乾杯の瞬間','ミニチュアに見えるもの']}];
+let cat=0,sug=null;
+function pick(){const used=new Set((D.rounds||[]).map(r=>r.theme)),all=THEMES[cat].items,pool=all.filter(t=>!used.has(t)),x=(pool.length?pool:all).slice();
+  for(let i=x.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[x[i],x[j]]=[x[j],x[i]]}sug=x.slice(0,3)}
+const form=label=>{if(!sug)pick();return `<div class="meta" style="margin-top:6px">お題の候補(タップで入力)</div><div>${THEMES.map((c,i)=>`<button type="button" class="cat ${i===cat?'on':''}" data-c="${i}">${esc(c.name)}</button>`).join('')}</div>${sug.map(t=>`<button type="button" class="sg" data-t="${esc(t)}">${esc(t)}</button>`).join('')}<button type="button" id="shuf">🎲 別の候補を出す</button><input id="theme" maxlength="40" placeholder="お題(例: 今この場でいちばん丸いもの)" value="${esc(draft.theme)}">
 <select id="secs">${[60,120,180,300].map(n=>`<option value="${n}" ${+draft.secs===n?'selected':''}>制限時間 ${n/60}分</option>`).join('')}</select>
-<button class="pri" id="go">${label}</button>`;
+<button class="pri" id="go">${label}</button>`};
 const totals=name=>[...D.scores].sort((a,b)=>b.total-a.total).map((x,i)=>`<div class="row"><span>${i?i+1+'位':'🏆'} ${ava(x.user_id)} ${esc(x.nickname)}</span><span style="text-align:right"><b>${x.total}</b>点</span></div>`).join('')||'<div class="meta">まだありません</div>';
 function roomView(){
   const R=D.room,host=R.host_id===me,cur=D.rounds[D.rounds.length-1];
@@ -169,7 +175,10 @@ function bind(){
   sync();
   on('#sndb',()=>{localStorage.setItem('snd',snd()?'off':'on');render(true);play('pop')});
   on('#leave',()=>{roomId=null;D={};draft.code='';editing=false;localStorage.removeItem('room');render(true)});
-  on('#go',()=>act(async()=>{await rpc('start_round',{p_room:roomId,p_theme:draft.theme,p_seconds:+draft.secs});draft.theme=''}));
+  on('#go',()=>act(async()=>{await rpc('start_round',{p_room:roomId,p_theme:draft.theme,p_seconds:+draft.secs});draft.theme='';sug=null}));
+  document.querySelectorAll('.cat').forEach(b=>b.onclick=()=>{cat=+b.dataset.c;pick();render(true)});
+  document.querySelectorAll('.sg').forEach(b=>b.onclick=()=>{draft.theme=b.dataset.t;const e=$('#theme');if(e)e.value=draft.theme});
+  on('#shuf',()=>{pick();render(true)});
   on('#rv',()=>act(()=>rpc('reveal_round',{p_round:cur.id})));
   on('#fin',()=>act(()=>rpc('finish_room',{p_room:roomId})));
   on('#shot',()=>$('#pic').click());
