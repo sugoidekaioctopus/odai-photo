@@ -18,4 +18,3 @@ window.RULES = {
     '画面の上の🔊ボタンで、効果音のオンオフを切り替えられます。',
   ],
 };
-<script type='text/javascript' src='https://storage.ko-fi.com/cdn/widget/Widget_2.js'></script><script type='text/javascript'>kofiwidget2.init('Support me on Ko-fi', '#fc0303', 'G3H629I9Y6');kofiwidget2.draw();</script> 
