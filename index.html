@@ -32,7 +32,7 @@ img.ph{width:100%;border-radius:10px;display:block;max-height:380px;object-fit:c
 .cat{width:auto;padding:4px 10px;font-size:13px;margin:2px}.cat.on{background:var(--acc);color:#fff;border-color:var(--acc)}.sg{text-align:left;margin:4px 0}
 .help{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.55);overflow:auto;padding:16px}.help .card{max-width:520px;margin:0 auto}.help li{margin:6px 0;font-size:14px}
 </style></head><body><main id="app"></main>
-<div class="meta" style="text-align:center;padding:0 0 24px">📸 写真はゲーム終了の約1時間後(終了しない場合は12時間後)に自動で削除されます<br>画面の版: 2026-10-24 i</div>
+<div class="meta" style="text-align:center;padding:0 0 24px">📸 写真はゲーム終了の約1時間後(終了しない場合は12時間後)に自動で削除されます<br>画面の版: 2026-10-24 j</div>
 <script src="config.js"></script>
 <script src="settings.js"></script>
 <script src="themes.js"></script>
@@ -72,7 +72,8 @@ const SFX={drum(){let t=0,gap=.16;while(t<FX.drumMs/1000-.1){tone(110,t,.12,'tri
 const BUF={};
 async function loadSe(){const a=ac();if(!a)return;for(const[k,f]of Object.entries(SN.files)){try{const r=await fetch(SN.dir+f);if(!r.ok)continue;BUF[k]=await a.decodeAudioData(await r.arrayBuffer())}catch(e){}}}
 document.addEventListener('pointerdown',loadSe,{once:true});
-const play=n=>{if(!snd())return;const a=ac();if(BUF[n]&&a){const s=a.createBufferSource();s.buffer=BUF[n];s.connect(a.destination);s.start()}else SFX[n]()};
+const play=n=>{if(!snd())return;const a=ac();if(BUF[n]&&a){const s=a.createBufferSource(),g=a.createGain();s.buffer=BUF[n];s.connect(g).connect(a.destination);s.start();
+  if(n==='drum'){const t=a.currentTime+FX.drumMs/1000;g.gain.setValueAtTime(1,Math.max(a.currentTime,t-.2));g.gain.linearRampToValueAtTime(0,t);s.stop(t+.02)}}else SFX[n]()};
 function confetti(n){if(matchMedia('(prefers-reduced-motion: reduce)').matches)return;
   const c=document.createElement('canvas');c.style.cssText='position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:50';c.width=innerWidth;c.height=innerHeight;document.body.appendChild(c);
   const x=c.getContext('2d'),cols=['#e8590c','#f59f00','#2b8a3e','#1c7ed6','#d6336c','#7048e8'];
