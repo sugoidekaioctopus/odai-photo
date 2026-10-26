@@ -3,7 +3,7 @@
 window.SETTINGS = {
   // 審査員キャラ。画像は chara/ フォルダの chara-1.png 〜 chara-5.png
   chara: {
-    name: '審査員さん',          // 結果発表に表示される名前
+    name: '採点クン',          // 結果発表に表示される名前
     dir: 'chara/',
     bands: [90, 70, 50, 30],     // 90点以上=chara-5 / 70以上=4 / 50以上=3 / 30以上=2 / それ未満=1
   },
