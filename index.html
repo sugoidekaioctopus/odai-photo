@@ -31,8 +31,9 @@ img.ph{width:100%;border-radius:10px;display:block;max-height:380px;object-fit:c
 @media (prefers-reduced-motion:reduce){.fx-up *,.fx-down *,.drum{animation:none!important}}
 .cat{width:auto;padding:4px 10px;font-size:13px;margin:2px}.cat.on{background:var(--acc);color:#fff;border-color:var(--acc)}.sg{text-align:left;margin:4px 0}
 .help{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.55);overflow:auto;padding:16px}.help .card{max-width:520px;margin:0 auto}.help li{margin:6px 0;font-size:14px}
+.dim{position:fixed;inset:0;z-index:35;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:18px;text-align:center}.dim span{display:inline-block;font-size:44px;animation:pulse .6s infinite alternate}
 </style></head><body><main id="app"></main>
-<div class="meta" style="text-align:center;padding:0 0 24px">📸 写真はゲーム終了の約1時間後(終了しない場合は12時間後)に自動で削除されます<br>画面の版: 2026-10-24 j</div>
+<div class="meta" style="text-align:center;padding:0 0 24px">📸 写真はゲーム終了の約1時間後(終了しない場合は12時間後)に自動で削除されます<br>画面の版: 2026-10-24 k</div>
 <script src="config.js"></script>
 <script src="settings.js"></script>
 <script src="themes.js"></script>
@@ -193,7 +194,7 @@ function roomView(){
   const mine=D.subs.find(s=>s.round_id===cur.id&&s.user_id===me);
   if(cur.status==='open'){
     h+=`<div class="card"><div class="meta">ラウンド${cur.no} ・ 残り <b id="cd"></b></div><div class="theme">${esc(cur.theme)}</div></div>`;
-    h+=mine?'<div class="card">✅ 投稿しました。結果発表を待ちましょう!</div>':`<input type="file" id="pic" accept="image/*" capture hidden><button class="pri big" id="shot">📷 撮って投稿</button>`;
+    h+=mine?'<div class="card">✅ 投稿しました。結果発表を待ちましょう!</div>':`<input type="file" id="pic" accept="image/*" capture hidden><button class="pri big" id="shot" ${busy?'disabled':''}>📷 撮って投稿</button>`;
     return h+(host?'<div class="card"><div class="meta">全員が投稿したら公開します</div><button class="pri" id="rv">結果を公開する</button></div>':'');
   }
   const subs=D.subs.filter(s=>s.round_id===cur.id).sort((a,b)=>b.score-a.score);
@@ -208,8 +209,11 @@ function roomView(){
   return h+(host?`<div class="card"><b>次のラウンド</b>${form('次のラウンド開始')}<button id="fin">ゲームを終了する</button></div>`:'<div class="card meta">幹事が次のお題を決めるのを待っています…</div>');
 }
 async function act(fn,note){
+  if(busy)return;
   busy=true;msg=note||'';render(true);
+  let dim=null;if(note){dim=document.createElement('div');dim.className='dim';dim.innerHTML=`<div><span>🤖</span><div>${esc(note)}</div></div>`;document.body.appendChild(dim)}
   try{await fn();msg=''}catch(e){msg=fail(e)}
+  if(dim)dim.remove();
   busy=false;if(roomId)await load();else render(true);
 }
 const rpc=async(n,a)=>{const {data,error}=await sb.rpc(n,a);if(error)throw error;return data};
@@ -237,7 +241,7 @@ function bind(){
   on('#shuf',()=>{pick();render(true)});
   on('#rv',()=>act(()=>rpc('reveal_round',{p_round:cur.id})));
   on('#fin',()=>act(()=>rpc('finish_room',{p_room:roomId})));
-  on('#shot',()=>$('#pic').click());
+  on('#shot',()=>{if(!busy)$('#pic').click()});
   const pic=$('#pic');if(pic)pic.onchange=()=>{const f=pic.files[0];if(!f)return;act(async()=>{
     const b64=await shrink(f);const {error}=await sb.functions.invoke('score',{body:{round_id:cur.id,image_base64:b64}});
     if(error){let m;try{const j=await error.context.json();m=j.error||j.message||j.msg}catch{}throw new Error(m||('送信に失敗しました('+((error.context&&error.context.status)||error.name)+')'))}},'AIが採点中…')};
