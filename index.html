@@ -81,10 +81,33 @@ function confetti(n){if(matchMedia('(prefers-reduced-motion: reduce)').matches)r
   const P=Array.from({length:n},()=>({x:Math.random()*c.width,y:-20-Math.random()*c.height*.5,w:6+Math.random()*6,h:8+Math.random()*8,vy:2+Math.random()*4,vx:(Math.random()-.5)*3,r:Math.random()*6,vr:(Math.random()-.5)*.3,c:cols[Math.random()*6|0]}));
   let f=0;(function loop(){x.clearRect(0,0,c.width,c.height);P.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.r+=p.vr;x.save();x.translate(p.x,p.y);x.rotate(p.r);x.fillStyle=p.c;x.fillRect(-p.w/2,-p.h/2,p.w,p.h);x.restore()});if(++f<240)requestAnimationFrame(loop);else c.remove()})()}
 function revealFx(rid){
+  const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches,GAP=FX.gapMs||3000;
   const o=document.createElement('div');o.className='ov';o.innerHTML='<div><div class="drum">🥁</div><div class="big">結果発表…</div></div>';document.body.appendChild(o);play('drum');
-  setTimeout(()=>{play('crash');o.remove();fxUntil=Date.now()+3000;render(true);
-    const best=Math.max(0,...(D.subs||[]).filter(s=>s.round_id===rid).map(s=>s.score));
-    if(best>=FX.up){play('fan');confetti(best>=FX.big?220:120)}else if(best<FX.sad)play('sad')},FX.drumMs)}
+  setTimeout(()=>{
+    play('crash');o.remove();
+    const L=(D.subs||[]).filter(s=>s.round_id===rid).sort((a,b)=>b.score-a.score);
+    REV={rid,n:0,done:false};
+    const step=()=>{
+      if(!REV||REV.rid!==rid)return;
+      if(REV.n>=L.length){REV.done=true;render(true);return}
+      const last=REV.n===L.length-1&&L.length>=2;
+      const show=()=>{
+        REV.n++;fxUntil=Date.now()+3000;
+        const s=L[REV.n-1];
+        if(REV.n===1&&s.score>=FX.up){play('fan');confetti(s.score>=FX.big?220:120)}
+        if(last)play('sad');
+        render(true);
+        const el=document.getElementById('rk'+(REV.n-1));
+        if(el)el.scrollIntoView({behavior:reduce?'auto':'smooth',block:'center'});
+        setTimeout(step,GAP);
+      };
+      if(last){
+        const o2=document.createElement('div');o2.className='ov';o2.innerHTML='<div><div class="drum">🥁</div><div class="big">最下位は〜?</div></div>';document.body.appendChild(o2);play('drum');
+        setTimeout(()=>{o2.remove();show()},FX.drumMs);
+      }else show();
+    };
+    step();
+  },FX.drumMs)}
 const HB='<button class="sm" id="help" style="float:right;font-size:13px">📖 遊び方</button>';
 const DEFAULT_RULES={title:'📖 遊び方',steps:[{icon:'📷',title:'お題の写真を撮る',text:'幹事が出したお題に合う写真を、制限時間内に撮って投稿します。'},{icon:'🤖',title:'AIが採点',text:'AI審査員が点数とコメントを付けます。'},{icon:'👍',title:'納得か不満か投票',text:'結果発表のあと、採点に投票しよう。'}],notes:[]};
 function showRules(){
@@ -200,13 +223,15 @@ function roomView(){
     return h+(host?`<div class="card"><div class="meta">${D.prog?(D.prog.answered>=D.prog.total?'全員が投稿しました!':`あと${D.prog.total-D.prog.answered}人が未投稿です`):'全員が投稿したら公開します'}</div><button class="pri" id="rv">結果を公開する</button></div>`:'');
   }
   const subs=D.subs.filter(s=>s.round_id===cur.id).sort((a,b)=>b.score-a.score);
+  const view=(REV&&REV.rid===cur.id)?subs.slice(0,REV.n):subs;
   h+=`<div class="card"><div class="meta">ラウンド${cur.no} 結果発表</div><div class="theme">${esc(cur.theme)}</div></div>`;
-  h+=subs.map((s,i)=>{
+  h+=view.map((s,i)=>{
     const vs=D.votes.filter(v=>v.submission_id===s.id),y=vs.filter(v=>v.value===1).length,n=vs.length-y,m=(vs.find(v=>v.user_id===me)||{}).value,own=s.user_id===me;
-    return `<div class="card"><img class="ph" src="${urls[s.image_path]||''}" alt="">
+    return `<div class="card" id="rk${i}"><img class="ph" src="${urls[s.image_path]||''}" alt="">
     <div class="row" style="margin-top:8px"><span><b>${i+1}位</b> ${ava(s.user_id)} ${esc(name(s.user_id))}</span><span class="score" style="text-align:right">${s.score}<small> 点</small></span></div>
-    <div class="judge ${Date.now()<fxUntil?(s.score>=FX.up?'fx-up':s.score<FX.fall?'fx-down':''):''}"><div>${faceImg(s.score)}<div class="meta" style="text-align:center">${esc(CHARA.name)}</div></div><div class="bubble">${esc(s.comment)}</div></div>
+    <div class="judge ${Date.now()<fxUntil&&(!REV||i===REV.n-1)?(s.score>=FX.up?'fx-up':s.score<FX.fall?'fx-down':''):''}"><div>${faceImg(s.score)}<div class="meta" style="text-align:center">${esc(CHARA.name)}</div></div><div class="bubble">${esc(s.comment)}</div></div>
     <div class="row vote"><button class="y ${m===1?'on':''}" data-s="${s.id}" data-v="1" ${own?'disabled':''}>👍 納得 ${y}</button><button class="n ${m===-1?'on':''}" data-s="${s.id}" data-v="-1" ${own?'disabled':''}>👎 不満 ${n}</button></div><div style="text-align:right"><button class="sm shr" data-s="${s.id}" data-r="${i+1}">📤 シェア</button></div></div>`}).join('')||'<div class="card meta">投稿がありませんでした</div>';
+    if(REV&&REV.rid===cur.id&&!REV.done)return h+'<div class="card meta" style="text-align:center">発表中…</div>';
   h+=`<div class="card"><b>累計ランキング</b>${totals()}</div>`;
   return h+(host?`<div class="card"><b>次のラウンド</b>${form('次のラウンド開始')}<button id="fin">ゲームを終了する</button></div>`:'<div class="card meta">幹事が次のお題を決めるのを待っています…</div>');
 }
