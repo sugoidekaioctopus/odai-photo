@@ -61,7 +61,7 @@ const ava=id=>av((D.players.find(p=>p.user_id===id)||{}).avatar);
 const sync=()=>{const n=draft.nick.trim(),j=$('#jn'),m=$('#mk');
   if(j){j.disabled=!n||!draft.code;j.textContent=n?n+'として参加する':'名前を入力してください'}
   if(m){m.disabled=!n;m.textContent=n?'ルームを作る(幹事)':'名前を入力してください'}};
-let fxUntil=0;const seen={};
+let fxUntil=0,REV=null;const seen={};
 let AC=null;const snd=()=>localStorage.getItem('snd')!=='off';
 function ac(){try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();if(AC.state==='suspended')AC.resume()}catch(e){}return AC}
 document.addEventListener('pointerdown',()=>ac(),{once:true});
