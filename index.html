@@ -33,7 +33,7 @@ img.ph{width:100%;border-radius:10px;display:block;max-height:380px;object-fit:c
 .help{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.55);overflow:auto;padding:16px}.help .card{max-width:520px;margin:0 auto}.help li{margin:6px 0;font-size:14px}
 .dim{position:fixed;inset:0;z-index:35;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:18px;text-align:center}.dim span{display:inline-block;font-size:44px;animation:pulse .6s infinite alternate}
 </style></head><body><main id="app"></main>
-<div class="meta" style="text-align:center;padding:0 0 24px">📸 写真はゲーム終了の約1時間後(終了しない場合は12時間後)に自動で削除されます<br><a href="https://ko-fi.com/big_octopus" target="_blank" rel="noopener" style="color:var(--acc)">🙏 投げ銭する</a><br>画面の版: 2026-10-27 l</div>
+<div class="meta" style="text-align:center;padding:0 0 24px">📸 写真はゲーム終了の約1時間後(終了しない場合は12時間後)に自動で削除されます<br><a href="https://ko-fi.com/big_octopus" target="_blank" rel="noopener" style="color:var(--acc)">🙏 投げ銭する</a><br>画面の版: 2026-10-27 m</div>
 <script src="config.js"></script>
 <script src="settings.js"></script>
 <script src="themes.js"></script>
@@ -160,7 +160,9 @@ async function load(){
   const [v,sc]=await Promise.all([ids.length?sb.from('votes').select('*').in('submission_id',ids):{data:[]},sb.from('room_scores').select('*').eq('room_id',roomId)]);
   const need=subs.map(x=>x.image_path).filter(x=>!urls[x]);
   if(need.length){const {data}=await sb.storage.from('photos').createSignedUrls(need,3600);(data||[]).forEach(x=>{if(x.signedUrl)urls[x.path]=x.signedUrl})}
-  D={room:r.data,players:p.data||[],rounds:rd.data||[],subs,votes:v.data||[],scores:sc.data||[]};
+    let prog=null;const cu0=(rd.data||[])[(rd.data||[]).length-1];
+  if(cu0&&cu0.status==='open'){try{const {data}=await sb.rpc('round_progress',{p_round:cu0.id});if(data&&data[0])prog=data[0]}catch(e){}}
+  D={room:r.data,players:p.data||[],rounds:rd.data||[],subs,votes:v.data||[],scores:sc.data||[],prog};
   const cu=D.rounds[D.rounds.length-1];let fx=null;
   if(cu){if(seen[cu.id]==='open'&&cu.status==='revealed')fx=cu.id;seen[cu.id]=cu.status}
   render();if(fx)revealFx(fx);
@@ -193,9 +195,9 @@ function roomView(){
   }
   const mine=D.subs.find(s=>s.round_id===cur.id&&s.user_id===me);
   if(cur.status==='open'){
-    h+=`<div class="card"><div class="meta">ラウンド${cur.no} ・ 残り <b id="cd"></b></div><div class="theme">${esc(cur.theme)}</div></div>`;
+    h+=`<div class="card"><div class="meta">ラウンド${cur.no} ・ 残り <b id="cd"></b>${D.prog?` ・ <b>${D.prog.answered}/${D.prog.total}人</b>回答済み`:''}</div><div class="theme">${esc(cur.theme)}</div></div>`;
     h+=mine?'<div class="card">✅ 投稿しました。結果発表を待ちましょう!</div>':`<input type="file" id="pic" accept="image/*" capture hidden><button class="pri big" id="shot" ${busy?'disabled':''}>📷 撮って投稿</button>`;
-    return h+(host?'<div class="card"><div class="meta">全員が投稿したら公開します</div><button class="pri" id="rv">結果を公開する</button></div>':'');
+    return h+(host?`<div class="card"><div class="meta">${D.prog?(D.prog.answered>=D.prog.total?'全員が投稿しました!':`あと${D.prog.total-D.prog.answered}人が未投稿です`):'全員が投稿したら公開します'}</div><button class="pri" id="rv">結果を公開する</button></div>`:'');
   }
   const subs=D.subs.filter(s=>s.round_id===cur.id).sort((a,b)=>b.score-a.score);
   h+=`<div class="card"><div class="meta">ラウンド${cur.no} 結果発表</div><div class="theme">${esc(cur.theme)}</div></div>`;
