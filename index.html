@@ -247,7 +247,7 @@ const totals=name=>[...D.scores].sort((a,b)=>b.total-a.total).map((x,i)=>`<div c
 function roomView(){
   const R=D.room,host=R.host_id===me,cur=D.rounds[D.rounds.length-1];
   const name=id=>(D.players.find(p=>p.user_id===id)||{}).nickname||'?';
-  let h=`<h1>📷 お題フォト${HB}</h1><div class="meta">ルーム <b>${R.code}</b> ・ ${D.players.length}人<button class="sm" id="sndb">${snd()?'🔊':'🔇'}</button><button class="sm" id="prof">名前・アバターを変更</button><button class="sm" id="leave">退出</button></div>`+(editing?`<div class="card"><b>名前とアバターを変更</b>${picker()}${nameIn()}<button class="pri" id="saveprof">保存</button></div>`:'');
+  let h=`<h1>📷 AI採点パーティゲーム　コレトッテ！${HB}</h1><div class="meta">ルーム <b>${R.code}</b> ・ ${D.players.length}人<button class="sm" id="sndb">${snd()?'🔊':'🔇'}</button><button class="sm" id="prof">名前・アバターを変更</button><button class="sm" id="leave">退出</button></div>`+(editing?`<div class="card"><b>名前とアバターを変更</b>${picker()}${nameIn()}<button class="pri" id="saveprof">保存</button></div>`:'');
   if(R.status==='finished')return h+`<div class="card"><b>🎉 最終結果</b>${totals()}<button class="pri" id="shrf" style="margin-top:8px">📤 結果をシェア</button></div>`;
   if(!cur){
     h+=`<div class="card"><div class="meta">この合言葉かQRで友達を招待</div><div class="code">${R.code}</div><div id="qr"></div>
