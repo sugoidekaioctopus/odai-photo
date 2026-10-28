@@ -127,7 +127,7 @@ async function cardSub(s,rank){
   const ph=await loadImg(URL.createObjectURL(blob)),{img,k}=await charaImg(s.score),rd=D.rounds.find(r=>r.id===s.round_id)||{};
   const c=document.createElement('canvas');c.width=1080;c.height=1440;const x=c.getContext('2d');
   x.fillStyle=C.bg;x.fillRect(0,0,1080,1440);x.fillStyle=C.acc;x.fillRect(0,0,1080,16);
-  x.fillStyle=C.mut;x.font='bold 34px '+FF;x.fillText('📷 お題フォト',60,80);
+  x.fillStyle=C.mut;x.font='bold 34px '+FF;x.fillText('📷 AI採点パーティゲーム　コレトッテ！',60,80);
   x.fillStyle=C.fg;x.font='bold 54px '+FF;lines(x,'お題:'+(rd.theme||''),960,2).forEach((t,i)=>x.fillText(t,60,160+i*66));
   const ar=960/720;let sx=0,sy=0,w=ph.width,hh=ph.height;if(w/hh>ar){w=hh*ar;sx=(ph.width-w)/2}else{hh=w/ar;sy=(ph.height-hh)/2}
   x.save();rpath(x,60,290,960,720,28);x.clip();x.drawImage(ph,sx,sy,w,hh,60,290,960,720);x.restore();
