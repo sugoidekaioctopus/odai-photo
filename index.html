@@ -33,7 +33,7 @@ img.ph{width:100%;border-radius:10px;display:block;max-height:380px;object-fit:c
 .help{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.55);overflow:auto;padding:16px}.help .card{max-width:520px;margin:0 auto}.help li{margin:6px 0;font-size:14px}
 .dim{position:fixed;inset:0;z-index:35;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:18px;text-align:center}.dim span{display:inline-block;font-size:44px;animation:pulse .6s infinite alternate}
 </style></head><body><main id="app"></main>
-<div class="meta" style="text-align:center;padding:0 0 24px">📸 写真はゲーム終了の約1時間後(終了しない場合は12時間後)に自動で削除されます<br><a href="https://ko-fi.com/big_octopus" target="_blank" rel="noopener" style="color:var(--acc)">🙏 投げ銭する</a><br>画面の版: 2026-10-27 q</div>
+<div class="meta" style="text-align:center;padding:0 0 24px">📸 写真はゲーム終了の約1時間後(終了しない場合は12時間後)に自動で削除されます<br><a href="https://ko-fi.com/big_octopus" target="_blank" rel="noopener" style="color:var(--acc)">🙏 投げ銭する</a><br>画面の版: 2026-10-27 r</div>
 <script src="config.js"></script>
 <script src="settings.js"></script>
 <script src="themes.js"></script>
@@ -142,7 +142,7 @@ function cardFinal(){
   const rows=[...D.scores].sort((a,b)=>b.total-a.total).slice(0,10),H=330+rows.length*120;
   const c=document.createElement('canvas');c.width=1080;c.height=H;const x=c.getContext('2d');
   x.fillStyle=C.bg;x.fillRect(0,0,1080,H);x.fillStyle=C.acc;x.fillRect(0,0,1080,16);
-  x.fillStyle=C.mut;x.font='bold 34px '+FF;x.fillText('📷 お題フォト',60,80);
+  x.fillStyle=C.mut;x.font='bold 34px '+FF;x.fillText('📷 AI採点パーティゲーム　コレトッテ！',60,80);
   x.fillStyle=C.fg;x.font='bold 72px '+FF;x.fillText('🏆 最終結果',60,190);
   rows.forEach((r,i)=>{const y=260+i*120;x.fillStyle=i?C.card:'#fff3e8';rpath(x,60,y,960,100,22);x.fill();x.strokeStyle=i?'#e6e1d8':C.acc;x.lineWidth=i?2:5;x.stroke();
     x.fillStyle=C.fg;x.font='bold 44px '+FF;x.fillText(['🥇','🥈','🥉'][i]||(i+1)+'位',90,y+65);
@@ -234,8 +234,8 @@ function render(force){
 }
 const picker=()=>`<div class="pick">${AV.map(a=>`<button type="button" class="avb ${a===draft.avatar?'on':''}" data-a="${a}">${a}</button>`).join('')}</div>`;
 const nameIn=()=>`<input id="nick" placeholder="ニックネーム(12文字まで)" maxlength="12" value="${esc(draft.nick)}">`;
-const home=()=>draft.code?`<h1>📷 お題フォト${HB}</h1><div class="card"><div class="meta">🎉 ルーム <b>${esc(draft.code)}</b> に招待されました</div><b>アバターと名前を決めよう</b>${picker()}${nameIn()}<button class="pri" id="jn"></button><button class="sm" id="other" style="margin:8px 0 0">別のルームを作る/参加する</button></div>`
-:`<h1>📷 お題フォト${HB}</h1><div class="card"><b>あなたの名前</b>${picker()}${nameIn()}</div><div class="card"><button class="pri" id="mk"></button></div><div class="card"><div class="meta">友達のルームに入る</div><input id="code" placeholder="合言葉(4文字)" maxlength="4" value="" style="text-transform:uppercase"><button class="pri" id="jn"></button></div>`;
+const home=()=>draft.code?`<h1>📷 AI採点パーティゲーム　コレトッテ！${HB}</h1><div class="card"><div class="meta">🎉 ルーム <b>${esc(draft.code)}</b> に招待されました</div><b>アバターと名前を決めよう</b>${picker()}${nameIn()}<button class="pri" id="jn"></button><button class="sm" id="other" style="margin:8px 0 0">別のルームを作る/参加する</button></div>`
+:`<h1>📷 AI採点パーティゲーム　コレトッテ！${HB}</h1><div class="card"><b>あなたの名前</b>${picker()}${nameIn()}</div><div class="card"><button class="pri" id="mk"></button></div><div class="card"><div class="meta">友達のルームに入る</div><input id="code" placeholder="合言葉(4文字)" maxlength="4" value="" style="text-transform:uppercase"><button class="pri" id="jn"></button></div>`;
 const THEMES=window.THEME_LIST||[{name:'おすすめ',items:['今この場でいちばん丸いもの','赤いもの','いちばん驚いた顔','今日を象徴するもの','乾杯の瞬間','ミニチュアに見えるもの']}];
 let cat=0,sug=null;
 function pick(){const used=new Set((D.rounds||[]).map(r=>r.theme)),all=THEMES[cat].items,pool=all.filter(t=>!used.has(t)),x=(pool.length?pool:all).slice();
