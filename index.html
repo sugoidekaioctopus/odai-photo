@@ -48,7 +48,7 @@ const FX=Object.assign({drumMs:2900,up:70,big:90,sad:50,fall:30},CFG.fx);
 const sb=supabase.createClient('https://fcrsgxcmcgkvogjttdar.supabase.co','sb_publishable_qQslyhZGP5kF0OZ_mlGdKg_PKk0c2b4');
 const $=s=>document.querySelector(s),app=$('#app');
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const ERR={'room not found':'合言葉の部屋が見つかりません','room full':'この部屋は満員です','host only':'幹事だけができる操作です','round already open':'いまのラウンドを先に公開してください','round closed':'時間切れです','already submitted':'このラウンドは投稿済みです','daily limit':'本日のAI採点の上限に達しました','scoring failed':'採点に失敗しました。もう一度どうぞ','not a member':'ルームに参加していません'};
+const ERR={'need more players':'2人以上で開始できます','room not found':'合言葉の部屋が見つかりません','room full':'この部屋は満員です','host only':'幹事だけができる操作です','round already open':'いまのラウンドを先に公開してください','round closed':'時間切れです','already submitted':'このラウンドは投稿済みです','daily limit':'本日のAI採点の上限に達しました','scoring failed':'採点に失敗しました。もう一度どうぞ','not a member':'ルームに参加していません'};
 let me=null,roomId=localStorage.getItem('room'),D={},urls={},sig='',msg='',busy=false,timer=null;
 const draft={theme:'',secs:120,code:new URLSearchParams(location.search).get('r')||'',nick:localStorage.getItem('nick')||'',avatar:localStorage.getItem('avatar')||'🙂'};
 draft.code=draft.code.toUpperCase();if(draft.code)roomId=null;let editing=false;
@@ -230,7 +230,7 @@ function pick(){const used=new Set((D.rounds||[]).map(r=>r.theme)),all=THEMES[ca
   for(let i=x.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[x[i],x[j]]=[x[j],x[i]]}sug=x.slice(0,3)}
 const form=label=>{if(!sug)pick();return `<div class="meta" style="margin-top:6px">お題の候補(タップで入力)</div><div>${THEMES.map((c,i)=>`<button type="button" class="cat ${i===cat?'on':''}" data-c="${i}">${esc(c.name)}</button>`).join('')}</div>${sug.map(t=>`<button type="button" class="sg" data-t="${esc(t)}">${esc(t)}</button>`).join('')}<button type="button" id="shuf">🎲 別の候補を出す</button><input id="theme" maxlength="40" placeholder="お題(例: 今この場でいちばん丸いもの)" value="${esc(draft.theme)}">
 <select id="secs">${[60,120,180,300].map(n=>`<option value="${n}" ${+draft.secs===n?'selected':''}>制限時間 ${n/60}分</option>`).join('')}</select>
-<button class="pri" id="go">${label}</button>`};
+${D.players.length<2?'<div class="meta" style="margin-top:6px">⚠ 2人以上で遊べます。QRコードか合言葉で友達を招待してください</div>':''}<button class="pri" id="go" ${D.players.length<2?'disabled':''}>${label}</button>`};
 const totals=name=>[...D.scores].sort((a,b)=>b.total-a.total).map((x,i)=>`<div class="row"><span>${i?i+1+'位':'🏆'} ${ava(x.user_id)} ${esc(x.nickname)}</span><span style="text-align:right"><b>${x.total}</b>点</span></div>`).join('')||'<div class="meta">まだありません</div>';
 function roomView(){
   const R=D.room,host=R.host_id===me,cur=D.rounds[D.rounds.length-1];
