@@ -2,6 +2,7 @@
 <html lang="ja"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>AI採点パーティゲーム　コレトッテ！</title>
+  <link rel="icon" href="logo.png"><link rel="apple-touch-icon" href="logo.png">
 <style>
 :root{--bg:#faf8f4;--fg:#1d1b18;--mut:#6f6a62;--card:#fff;--line:#e6e1d8;--acc:#e8590c;--ok:#2b8a3e;--ng:#c92a2a;color-scheme:light dark}
 @media (prefers-color-scheme:dark){:root{--bg:#171513;--fg:#f2eee8;--mut:#a39d93;--card:#211f1c;--line:#34312c;--acc:#ff8a4c;--ok:#69db7c;--ng:#ff8787}}
@@ -32,7 +33,7 @@ img.ph{width:100%;border-radius:10px;display:block;max-height:380px;object-fit:c
 .cat{width:auto;padding:4px 10px;font-size:13px;margin:2px}.cat.on{background:var(--acc);color:#fff;border-color:var(--acc)}.sg{text-align:left;margin:4px 0}
 .help{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.55);overflow:auto;padding:16px}.help .card{max-width:520px;margin:0 auto}.help li{margin:6px 0;font-size:14px}
 .dim{position:fixed;inset:0;z-index:35;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:18px;text-align:center}.dim span{display:inline-block;font-size:44px;animation:pulse .6s infinite alternate}
-</style></head><body><main id="app"></main>
+h1.t{display:flex;align-items:center;justify-content:space-between;margin:4px 0 10px}.logo{display:block;height:40px;max-width:70%;object-fit:contain}</style></head><body><main id="app"></main>
 <div class="meta" style="text-align:center;padding:0 0 24px">📸 写真はゲーム終了の約1時間後(終了しない場合は12時間後)に自動で削除されます<br><a href="https://ko-fi.com/big_octopus" target="_blank" rel="noopener" style="color:var(--acc)">🙏 投げ銭する</a><br>画面の版: 2026-10-27 r</div>
 <script src="config.js"></script>
 <script src="settings.js"></script>
@@ -109,7 +110,8 @@ function revealFx(rid){
     step();
   },FX.drumMs)}
 const HB='<button class="sm" id="help" style="float:right;font-size:13px">📖 遊び方</button>';
-const DEFAULT_RULES={title:'📖 遊び方',steps:[{icon:'📷',title:'お題の写真を撮る',text:'幹事が出したお題に合う写真を、制限時間内に撮って投稿します。'},{icon:'🤖',title:'AIが採点',text:'AI審査員が点数とコメントを付けます。'},{icon:'👍',title:'納得か不満か投票',text:'結果発表のあと、採点に投票しよう。'}],notes:[]};
+const LOGO='<img class="logo" src="logo.png" alt="お題フォト" onerror="this.replaceWith(document.createTextNode(\'📷 お題フォト\'))">';
+  const DEFAULT_RULES={title:'📖 遊び方',steps:[{icon:'📷',title:'お題の写真を撮る',text:'幹事が出したお題に合う写真を、制限時間内に撮って投稿します。'},{icon:'🤖',title:'AIが採点',text:'AI審査員が点数とコメントを付けます。'},{icon:'👍',title:'納得か不満か投票',text:'結果発表のあと、採点に投票しよう。'}],notes:[]};
 function showRules(){
   if($('.help'))return;
   const R=window.RULES||DEFAULT_RULES,o=document.createElement('div');o.className='help';
@@ -234,8 +236,8 @@ function render(force){
 }
 const picker=()=>`<div class="pick">${AV.map(a=>`<button type="button" class="avb ${a===draft.avatar?'on':''}" data-a="${a}">${a}</button>`).join('')}</div>`;
 const nameIn=()=>`<input id="nick" placeholder="ニックネーム(12文字まで)" maxlength="12" value="${esc(draft.nick)}">`;
-const home=()=>draft.code?`<h1>📷 AI採点パーティゲーム　コレトッテ！${HB}</h1><div class="card"><div class="meta">🎉 ルーム <b>${esc(draft.code)}</b> に招待されました</div><b>アバターと名前を決めよう</b>${picker()}${nameIn()}<button class="pri" id="jn"></button><button class="sm" id="other" style="margin:8px 0 0">別のルームを作る/参加する</button></div>`
-:`<h1>📷 AI採点パーティゲーム　コレトッテ！${HB}</h1><div class="card"><b>あなたの名前</b>${picker()}${nameIn()}</div><div class="card"><button class="pri" id="mk"></button></div><div class="card"><div class="meta">友達のルームに入る</div><input id="code" placeholder="合言葉(4文字)" maxlength="4" value="" style="text-transform:uppercase"><button class="pri" id="jn"></button></div>`;
+const home=()=>draft.code?`<h1 class="t">${LOGO}${HB}</h1><div class="card"><div class="meta">🎉 ルーム <b>${esc(draft.code)}</b> に招待されました</div><b>アバターと名前を決めよう</b>${picker()}${nameIn()}<button class="pri" id="jn"></button><button class="sm" id="other" style="margin:8px 0 0">別のルームを作る/参加する</button></div>`
+:`<h1 class="t">${LOGO}${HB}</h1><div class="card"><b>あなたの名前</b>${picker()}${nameIn()}</div><div class="card"><button class="pri" id="mk"></button></div><div class="card"><div class="meta">友達のルームに入る</div><input id="code" placeholder="合言葉(4文字)" maxlength="4" value="" style="text-transform:uppercase"><button class="pri" id="jn"></button></div>`;
 const THEMES=window.THEME_LIST||[{name:'おすすめ',items:['今この場でいちばん丸いもの','赤いもの','いちばん驚いた顔','今日を象徴するもの','乾杯の瞬間','ミニチュアに見えるもの']}];
 let cat=0,sug=null;
 function pick(){const used=new Set((D.rounds||[]).map(r=>r.theme)),all=THEMES[cat].items,pool=all.filter(t=>!used.has(t)),x=(pool.length?pool:all).slice();
@@ -247,7 +249,7 @@ const totals=name=>[...D.scores].sort((a,b)=>b.total-a.total).map((x,i)=>`<div c
 function roomView(){
   const R=D.room,host=R.host_id===me,cur=D.rounds[D.rounds.length-1];
   const name=id=>(D.players.find(p=>p.user_id===id)||{}).nickname||'?';
-  let h=`<h1>📷 AI採点パーティゲーム　コレトッテ！${HB}</h1><div class="meta">ルーム <b>${R.code}</b> ・ ${D.players.length}人<button class="sm" id="sndb">${snd()?'🔊':'🔇'}</button><button class="sm" id="prof">名前・アバターを変更</button><button class="sm" id="leave">退出</button></div>`+(editing?`<div class="card"><b>名前とアバターを変更</b>${picker()}${nameIn()}<button class="pri" id="saveprof">保存</button></div>`:'');
+  let h=`<h1 class="t">${LOGO}${HB}</h1><div class="meta">ルーム <b>${R.code}</b> ・ ${D.players.length}人<button class="sm" id="sndb">${snd()?'🔊':'🔇'}</button><button class="sm" id="prof">名前・アバターを変更</button><button class="sm" id="leave">退出</button></div>`+(editing?`<div class="card"><b>名前とアバターを変更</b>${picker()}${nameIn()}<button class="pri" id="saveprof">保存</button></div>`:'');
   if(R.status==='finished')return h+`<div class="card"><b>🎉 最終結果</b>${totals()}<button class="pri" id="shrf" style="margin-top:8px">📤 結果をシェア</button></div>`;
   if(!cur){
     h+=`<div class="card"><div class="meta">この合言葉かQRで友達を招待</div><div class="code">${R.code}</div><div id="qr"></div>
