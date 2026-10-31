@@ -9,7 +9,7 @@
 body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.6 "Hiragino Sans","Noto Sans JP",sans-serif}
 main{max-width:520px;margin:0 auto;padding:16px;padding-bottom:60px}
 h1{font-size:20px;margin:4px 0 10px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:14px}
+.card{scroll-margin-top:12px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:14px}
 input,select,button{font:inherit;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--fg);padding:10px 12px;width:100%;box-sizing:border-box;margin:4px 0}
 button{cursor:pointer}button.pri{background:var(--acc);border-color:var(--acc);color:#fff;font-weight:700}
 button.sm{width:auto;padding:2px 10px;font-size:12px;margin:0 0 0 8px}button:disabled{opacity:.5}
@@ -36,7 +36,7 @@ img.ph{width:100%;border-radius:10px;display:block;max-height:380px;object-fit:c
 h1.t{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;margin:4px 0 10px}h1.t picture{display:block;width:100%}.logo{display:block;width:100%;height:auto;border-radius:14px}h1.t #help{margin:6px 0 0}
 h1.t.in{flex-wrap:nowrap;justify-content:space-between}h1.t.in .logo{width:auto;height:64px}
 </style></head><body><main id="app"></main>
-<div class="meta" style="text-align:center;padding:0 0 24px">📸 写真はゲーム終了の約1時間後(終了しない場合は12時間後)に自動で削除されます<br><a href="https://ko-fi.com/big_octopus" target="_blank" rel="noopener" style="color:var(--acc)">🙏 投げ銭する</a><br>画面の版: 2026-10-31 b</div>
+<div class="meta" style="text-align:center;padding:0 0 24px">📸 写真はゲーム終了の約1時間後(終了しない場合は12時間後)に自動で削除されます<br><a href="https://ko-fi.com/big_octopus" target="_blank" rel="noopener" style="color:var(--acc)">🙏 投げ銭する</a><br>画面の版: 2026-10-31 c</div>
 <script src="config.js"></script>
 <script src="settings.js"></script>
 <script src="themes.js"></script>
@@ -101,7 +101,8 @@ function revealFx(rid){
         if(last)play('sad');
         render(true);
         const el=document.getElementById('rk'+(REV.n-1));
-        if(el)el.scrollIntoView({behavior:reduce?'auto':'smooth',block:'center'});
+        if(el){const go=()=>el.scrollIntoView({behavior:reduce?'auto':'smooth',block:'start'}),im=el.querySelector('img.ph');
+          if(im&&!im.complete){let d=false;const once=()=>{if(!d){d=true;go()}};im.addEventListener('load',once,{once:true});im.addEventListener('error',once,{once:true});setTimeout(once,2500)}else go()}
         setTimeout(step,GAP);
       };
       if(last){
@@ -279,7 +280,7 @@ function roomView(){
     <div class="row" style="margin-top:8px"><span><b>${i+1}位</b> ${ava(s.user_id)} ${esc(name(s.user_id))}</span><span class="score" style="text-align:right">${s.score}<small> 点</small></span></div>
     <div class="judge ${Date.now()<fxUntil&&(!REV||i===REV.n-1)?(s.score>=FX.up?'fx-up':s.score<FX.fall?'fx-down':''):''}"><div>${faceImg(s.score)}<div class="meta" style="text-align:center">${esc(CHARA.name)}</div></div><div class="bubble">${esc(s.comment)}</div></div>
     <div class="row vote"><button class="y ${m===1?'on':''}" data-s="${s.id}" data-v="1" ${own?'disabled':''}>👍 納得 ${y}</button><button class="n ${m===-1?'on':''}" data-s="${s.id}" data-v="-1" ${own?'disabled':''}>👎 不満 ${n}</button></div><div style="text-align:right"><button class="sm shr" data-s="${s.id}" data-r="${i+1}">📤 シェア</button></div></div>`}).join('')||'<div class="card meta">投稿がありませんでした</div>';
-    if(REV&&REV.rid===cur.id&&!REV.done)return h+'<div class="card meta" style="text-align:center">発表中…</div>';
+    if(REV&&REV.rid===cur.id&&!REV.done)return h+'<div class="card meta" style="text-align:center">発表中…</div><div style="height:70vh"></div>';
     if(subs.length)h+='<div class="card"><button id="gifb">🎞 このお題をGIFで保存</button></div>';
   h+=`<div class="card"><b>累計ランキング</b>${totals()}</div>`;
   return h+(host?`<div class="card"><b>次のラウンド</b>${form('次のラウンド開始')}<button id="fin">ゲームを終了する</button></div>`:'<div class="card meta">幹事が次のお題を決めるのを待っています…</div>');
