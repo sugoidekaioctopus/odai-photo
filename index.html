@@ -36,7 +36,7 @@ img.ph{width:100%;border-radius:10px;display:block;max-height:380px;object-fit:c
 h1.t{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;margin:4px 0 10px}h1.t picture{display:block;width:100%}.logo{display:block;width:100%;height:auto;border-radius:14px}h1.t #help{margin:6px 0 0}
 h1.t.in{flex-wrap:nowrap;justify-content:space-between}h1.t.in .logo{width:auto;height:64px}
 </style></head><body><main id="app"></main>
-<div class="meta" style="text-align:center;padding:0 0 24px">📸 写真はゲーム終了の約1時間後(終了しない場合は12時間後)に自動で削除されます<br><a href="https://ko-fi.com/big_octopus" target="_blank" rel="noopener" style="color:var(--acc)">🙏 投げ銭する</a><br>画面の版: 2026-10-31 a</div>
+<div class="meta" style="text-align:center;padding:0 0 24px">📸 写真はゲーム終了の約1時間後(終了しない場合は12時間後)に自動で削除されます<br><a href="https://ko-fi.com/big_octopus" target="_blank" rel="noopener" style="color:var(--acc)">🙏 投げ銭する</a><br>画面の版: 2026-10-31 b</div>
 <script src="config.js"></script>
 <script src="settings.js"></script>
 <script src="themes.js"></script>
@@ -60,7 +60,7 @@ const fb=(el,k)=>{if(!el.dataset.t){el.dataset.t=1;el.src=`chara-${k}.png`;retur
 const faceImg=sc=>{const b=CH.bands,k=sc>=b[0]?5:sc>=b[1]?4:sc>=b[2]?3:sc>=b[3]?2:1;return `<img src="${CH.dir}chara-${k}.png" alt="" onerror="fb(this,${k})">`};
 const AV=CFG.avatars||['🐱','🐶','🐰','🦊','🐼','🐸','🐵','🦁','🐧','🐙','🦄','🍺','🍕','🎸','🌸','👻'];
 const av=a=>a&&a.startsWith('img:')?`<img class="av" src="avatars/${esc(a.slice(4))}.png" alt="">`:`<span class="av">${esc(a||'🙂')}</span>`;
-const ava=id=>av((D.players.find(p=>p.user_id===id)||{}).avatar);
+const ava=id=>av(((D.allPlayers||D.players).find(p=>p.user_id===id)||{}).avatar);
 const sync=()=>{const n=draft.nick.trim(),j=$('#jn'),m=$('#mk');
   if(j){j.disabled=!n||!draft.code;j.textContent=n?n+'として参加する':'名前を入力してください'}
   if(m){m.disabled=!n;m.textContent=n?'ルームを作る(幹事)':'名前を入力してください'}};
@@ -124,7 +124,7 @@ const loadImg=src=>new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(
 const rpath=(x,a,b,w,hh,r)=>{x.beginPath();x.roundRect?x.roundRect(a,b,w,hh,r):x.rect(a,b,w,hh)};
 function lines(x,t,mw,max){const L=[];let l='';for(const ch of t){if(x.measureText(l+ch).width>mw){L.push(l);l=ch}else l+=ch}if(l)L.push(l);if(L.length>max){L.length=max;L[max-1]=L[max-1].slice(0,-1)+'…'}return L}
 async function charaImg(sc){const b=CH.bands,k=sc>=b[0]?5:sc>=b[1]?4:sc>=b[2]?3:sc>=b[3]?2:1;for(const u of [`${CH.dir}chara-${k}.png`,`chara-${k}.png`]){try{return{img:await loadImg(u),k}}catch(e){}}return{img:null,k}}
-const pl=id=>D.players.find(p=>p.user_id===id)||{};
+const pl=id=>(D.allPlayers||D.players).find(p=>p.user_id===id)||{};
 const avTxt=a=>a&&!a.startsWith('img:')?a+' ':'';
 async function cardSub(s,rank){
   const {data:blob,error}=await sb.storage.from('photos').download(s.image_path);if(error)throw error;
@@ -196,11 +196,14 @@ function captcha(){return new Promise((res,rej)=>{
   const s=document.createElement('script');s.src='https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
   s.onload=()=>turnstile.render('#cap',{sitekey:TS_KEY,appearance:'interaction-only',callback:t=>res(t),'error-callback':()=>rej(new Error('captcha'))});
   s.onerror=()=>rej(new Error('captcha'));setTimeout(()=>rej(new Error('captcha timeout')),20000);document.head.appendChild(s)})}
+async function beat(){if(!roomId||!me)return;try{await sb.rpc('heartbeat',{p_room:roomId})}catch(e){}}
 async function boot(){
   let {data:{session}}=await sb.auth.getSession();
   if(!session){const tk=await captcha().catch(()=>null);const r=await sb.auth.signInAnonymously(tk?{options:{captchaToken:tk}}:undefined);if(r.error){app.innerHTML='<div class="card">'+(/captcha/i.test(r.error.message)?'確認(CAPTCHA)に失敗しました。ページを再読み込みしてください。':'接続できませんでした。匿名ログインの設定を確認してください。')+'<br><small>'+esc(r.error.message)+'</small></div>';return}session=r.data.session}
   me=session.user.id;if(roomId)await load();else render(true);
   setInterval(()=>{if(roomId&&!busy)load()},3000);
+  setInterval(beat,20000);beat();
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden){beat();if(roomId&&!busy)load()}});
 }
 async function load(){
   const [r,p,rd,s]=await Promise.all([
@@ -209,13 +212,16 @@ async function load(){
     sb.from('rounds').select('*').eq('room_id',roomId).order('no'),
     sb.from('submissions').select('*').eq('room_id',roomId)]);
   if(!r.data){roomId=null;localStorage.removeItem('room');D={};render(true);return}
+  const prevHost=(D.room&&D.room.id===r.data.id)?D.room.host_id:null;
   const subs=s.data||[],ids=subs.map(x=>x.id);
   const [v,sc]=await Promise.all([ids.length?sb.from('votes').select('*').in('submission_id',ids):{data:[]},sb.from('room_scores').select('*').eq('room_id',roomId)]);
   const need=subs.map(x=>x.image_path).filter(x=>!urls[x]);
   if(need.length){const {data}=await sb.storage.from('photos').createSignedUrls(need,3600);(data||[]).forEach(x=>{if(x.signedUrl)urls[x.path]=x.signedUrl})}
     let prog=null;const cu0=(rd.data||[])[(rd.data||[]).length-1];
   if(cu0&&cu0.status==='open'){try{const {data}=await sb.rpc('round_progress',{p_round:cu0.id});if(data&&data[0])prog=data[0]}catch(e){}}
-  D={room:r.data,players:p.data||[],rounds:rd.data||[],subs,votes:v.data||[],scores:sc.data||[],prog};
+  const allP=(p.data||[]).map(({last_seen,...x})=>x); // last_seen は毎回変わるので画面の比較から外す
+  D={room:r.data,players:allP.filter(x=>!x.left_at),allPlayers:allP,rounds:rd.data||[],subs,votes:v.data||[],scores:sc.data||[],prog};
+  if(prevHost&&prevHost!==r.data.host_id){const nm=((D.allPlayers.find(x=>x.user_id===r.data.host_id))||{}).nickname||'?',tx=r.data.host_id===me?'あなたが新しい幹事になりました':'幹事が'+nm+'さんに交代しました';msg=tx;setTimeout(()=>{if(msg===tx){msg='';render()}},8000)}
   const cu=D.rounds[D.rounds.length-1];let fx=null;
   if(cu){if(seen[cu.id]==='open'&&cu.status==='revealed')fx=cu.id;seen[cu.id]=cu.status}
   render();if(fx)revealFx(fx);
@@ -250,7 +256,7 @@ ${D.players.length<2?'<div class="meta" style="margin-top:6px">⚠ 2人以上で
 const totals=name=>[...D.scores].sort((a,b)=>b.total-a.total).map((x,i)=>`<div class="row"><span>${i?i+1+'位':'🏆'} ${ava(x.user_id)} ${esc(x.nickname)}</span><span style="text-align:right"><b>${x.total}</b>点</span></div>`).join('')||'<div class="meta">まだありません</div>';
 function roomView(){
   const R=D.room,host=R.host_id===me,cur=D.rounds[D.rounds.length-1];
-  const name=id=>(D.players.find(p=>p.user_id===id)||{}).nickname||'?';
+  const name=id=>((D.allPlayers||D.players).find(p=>p.user_id===id)||{}).nickname||'?';
   let h=`<h1 class="t">${LOGO}${HB}</h1><div class="meta">ルーム <b>${R.code}</b> ・ ${D.players.length}人<button class="sm" id="sndb">${snd()?'🔊':'🔇'}</button><button class="sm" id="prof">名前・アバターを変更</button><button class="sm" id="leave">退出</button></div>`+(editing?`<div class="card"><b>名前とアバターを変更</b>${picker()}${nameIn()}<button class="pri" id="saveprof">保存</button></div>`:'');
   if(R.status==='finished')return h+`<div class="card"><b>🎉 最終結果</b>${totals()}<button class="pri" id="shrf" style="margin-top:8px">📤 結果をシェア</button></div>`;
   if(!cur){
@@ -310,7 +316,11 @@ function bind(){
   document.querySelectorAll('.shr').forEach(b=>b.onclick=async()=>{const s=D.subs.find(x=>x.id===b.dataset.s);if(!s)return;b.disabled=true;b.textContent='作成中…';
     try{await showShare(await cardSub(s,+b.dataset.r))}catch(e){msg='画像を作れませんでした';render(true)}b.disabled=false;b.textContent='📤 シェア'});
   on('#sndb',()=>{localStorage.setItem('snd',snd()?'off':'on');render(true);play('pop')});
-  on('#leave',()=>{roomId=null;D={};draft.code='';editing=false;localStorage.removeItem('room');render(true)});
+  on('#leave',async()=>{
+    const isHost=D.room&&D.room.host_id===me;
+    if(!confirm(isHost?'あなたは幹事です。退出すると、ほかの参加者に幹事が移ります。退出しますか?':'このルームから退出しますか?'))return;
+    const rid=roomId;try{await rpc('leave_room',{p_room:rid})}catch(e){}
+    roomId=null;D={};draft.code='';editing=false;localStorage.removeItem('room');render(true)});
   on('#go',()=>act(async()=>{await rpc('start_round',{p_room:roomId,p_theme:draft.theme,p_seconds:+draft.secs});draft.theme='';sug=null}));
   document.querySelectorAll('.cat').forEach(b=>b.onclick=()=>{cat=+b.dataset.c;pick();render(true)});
   document.querySelectorAll('.sg').forEach(b=>b.onclick=()=>{draft.theme=b.dataset.t;const e=$('#theme');if(e)e.value=draft.theme});
