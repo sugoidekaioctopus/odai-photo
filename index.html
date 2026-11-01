@@ -53,7 +53,7 @@ button.pri:disabled{box-shadow:none}
 .cnt{counter-reset:n var(--n);animation:cnt 1s ease-out both}.cnt::before{content:counter(n)}
 @media (prefers-reduced-motion:reduce){.cnt{animation:none!important}}
 </style></head><body><main id="app"></main>
-<div class="meta" style="text-align:center;padding:0 0 24px">📸 写真はゲーム終了の約1時間後(終了しない場合は12時間後)に自動で削除されます<br><a href="https://www.youtube.com/@OctoJPstreamer" target="_blank" rel="noopener" style="color:var(--acc)">▶ YouTube</a> ・ <a href="https://x.com/octo_JPstreamer" target="_blank" rel="noopener" style="color:var(--acc)">𝕏 (旧Twitter)</a> ・ <a href="https://ko-fi.com/big_octopus" target="_blank" rel="noopener" style="color:var(--acc)">🙏 投げ銭する</a><br><a href="legal.html" target="_blank" rel="noopener" style="color:var(--acc)">利用規約・プライバシーポリシー</a><br>画面の版: 2026-10-31 g</div>
+<div class="meta" style="text-align:center;padding:0 0 24px">📸 写真はゲーム終了の約1時間後(終了しない場合は12時間後)に自動で削除されます<br><a href="https://www.youtube.com/@OctoJPstreamer" target="_blank" rel="noopener" style="color:var(--acc)">▶ YouTube</a> ・ <a href="https://x.com/octo_JPstreamer" target="_blank" rel="noopener" style="color:var(--acc)">𝕏 (旧Twitter)</a> ・ <a href="https://ko-fi.com/big_octopus" target="_blank" rel="noopener" style="color:var(--acc)">🙏 投げ銭する</a><br><a href="legal.html" target="_blank" rel="noopener" style="color:var(--acc)">利用規約・プライバシーポリシー</a><br>画面の版: 2026-10-31 h</div>
 <script src="config.js"></script>
 <script src="settings.js"></script>
 <script src="themes.js"></script>
@@ -263,7 +263,7 @@ function render(force){
 const picker=()=>`<div class="pick">${AV.map(a=>`<button type="button" class="avb ${a===draft.avatar?'on':''}" data-a="${a}">${a}</button>`).join('')}</div>`;
 const nameIn=()=>`<input id="nick" placeholder="ニックネーム(12文字まで)" maxlength="12" value="${esc(draft.nick)}">`;
 const CONSENT='<div class="meta" style="margin:0 0 8px;font-size:12px">参加・作成すると、<a href="legal.html#terms" target="_blank" rel="noopener" style="color:var(--acc)">利用規約</a>と<a href="legal.html#privacy" target="_blank" rel="noopener" style="color:var(--acc)">プライバシーポリシー</a>(写真がAIに送られることを含む)に同意したものとみなします</div>';
-const home=()=>draft.code?`<h1 class="t in">${LOGO}${HB}</h1><div class="card"><div class="meta">🎉 ルーム <b>${esc(draft.code)}</b> に招待されました</div><b>アバターと名前を決めよう</b>${picker()}${nameIn()}${CONSENT}<button class="pri" id="jn"></button><button class="sm" id="other" style="margin:8px 0 0">別のルームを作る/参加する</button></div>`
+const home=()=>draft.code?`<h1 class="t">${LOGO}${HB}</h1><div class="card"><div class="meta">🎉 ルーム <b>${esc(draft.code)}</b> に招待されました</div><b>アバターと名前を決めよう</b>${picker()}${nameIn()}${CONSENT}<button class="pri" id="jn"></button><button class="sm" id="other" style="margin:8px 0 0">別のルームを作る/参加する</button></div>`
 :`<h1 class="t">${LOGO}${HB}</h1><div class="steps"><span><b>📸</b>お題の写真を撮る</span><i>▶</i><span><b>🤖</b>AIが採点</span><i>▶</i><span><b>🏆</b>順位を発表</span></div><div class="card"><b>あなたの名前</b>${picker()}${nameIn()}</div><div class="card">${CONSENT}<button class="pri" id="mk"></button></div><div class="card"><div class="meta">友達のルームに入る</div><input id="code" placeholder="合言葉(4文字)" maxlength="4" value="" style="text-transform:uppercase"><button class="pri" id="jn"></button></div>`;
 const THEMES=window.THEME_LIST||[{name:'おすすめ',items:['今この場でいちばん丸いもの','赤いもの','いちばん驚いた顔','今日を象徴するもの','乾杯の瞬間','ミニチュアに見えるもの']}];
 let cat=0,sug=null;
