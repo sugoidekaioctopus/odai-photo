@@ -53,7 +53,7 @@ button.pri:disabled{box-shadow:none}
 .cnt{counter-reset:n var(--n);animation:cnt 1s ease-out both}.cnt::before{content:counter(n)}
 @media (prefers-reduced-motion:reduce){.cnt{animation:none!important}}
 </style></head><body><main id="app"></main>
-<div class="meta" style="text-align:center;padding:0 0 24px">📸 写真はゲーム終了の約1時間後(終了しない場合は12時間後)に自動で削除されます<br><a href="https://www.youtube.com/@OctoJPstreamer" target="_blank" rel="noopener" style="color:var(--acc)">▶ YouTube</a> ・ <a href="https://x.com/octo_JPstreamer" target="_blank" rel="noopener" style="color:var(--acc)">𝕏 (旧Twitter)</a> ・ <a href="https://ko-fi.com/big_octopus" target="_blank" rel="noopener" style="color:var(--acc)">🙏 投げ銭する</a><br><a href="legal.html" target="_blank" rel="noopener" style="color:var(--acc)">利用規約・プライバシーポリシー</a><br>画面の版: 2026-10-31 i</div>
+<div class="meta" style="text-align:center;padding:0 0 24px">📸 写真はゲーム終了の約1時間後(終了しない場合は12時間後)に自動で削除されます<br><a href="https://www.youtube.com/@OctoJPstreamer" target="_blank" rel="noopener" style="color:var(--acc)">▶ YouTube</a> ・ <a href="https://x.com/octo_JPstreamer" target="_blank" rel="noopener" style="color:var(--acc)">𝕏 (旧Twitter)</a> ・ <a href="https://ko-fi.com/big_octopus" target="_blank" rel="noopener" style="color:var(--acc)">🙏 投げ銭する</a><br><a href="legal.html" target="_blank" rel="noopener" style="color:var(--acc)">利用規約・プライバシーポリシー</a><br>画面の版: 2026-10-31 j</div>
 <script src="config.js"></script>
 <script src="settings.js"></script>
 <script src="themes.js"></script>
@@ -286,7 +286,7 @@ function roomView(){
   const mine=D.subs.find(s=>s.round_id===cur.id&&s.user_id===me);
   if(cur.status==='open'){
     h+=`<div class="card"><div class="meta">ラウンド${cur.no} ・ 残り <b id="cd"></b>${D.prog?` ・ <b>${D.prog.answered}/${D.prog.total}人</b>回答済み`:''}</div><div class="theme">${esc(cur.theme)}</div></div>`;
-    h+=mine?'<div class="card">✅ 投稿しました。結果発表を待ちましょう!</div>':`<input type="file" id="pic" accept="image/*" capture hidden><button class="pri big" id="shot" ${busy?'disabled':''}>📷 撮って投稿</button>`;
+    h+=mine?'<div class="card">✅ 投稿しました。結果発表を待ちましょう!</div>':`<input type="file" id="pic" accept="image/*" capture hidden><input type="file" id="pic2" accept="image/*" hidden><button class="pri big" id="shot" ${busy?'disabled':''}>📷 撮って投稿</button><button class="pri big" id="album" style="margin-top:10px;background:var(--card);color:var(--acc);border:2px solid var(--acc);box-shadow:none" ${busy?'disabled':''}>🖼 アルバムから選ぶ</button>`;
     return h+(host?`<div class="card"><div class="meta">${D.prog?(D.prog.answered>=D.prog.total?'全員が投稿しました!':`あと${D.prog.total-D.prog.answered}人が未投稿です`):'全員が投稿したら公開します'}</div><button class="pri" id="rv">結果を公開する</button></div>`:'');
   }
   const subs=D.subs.filter(s=>s.round_id===cur.id).sort((a,b)=>b.score-a.score);
@@ -347,9 +347,10 @@ function bind(){
   on('#rv',()=>act(()=>rpc('reveal_round',{p_round:cur.id})));
   on('#fin',()=>act(()=>rpc('finish_room',{p_room:roomId})));
   on('#shot',()=>{if(!busy)$('#pic').click()});
-  const pic=$('#pic');if(pic)pic.onchange=()=>{const f=pic.files[0];if(!f)return;act(async()=>{
+  on('#album',()=>{if(!busy)$('#pic2').click()});
+  ['#pic','#pic2'].forEach(sel=>{const pic=$(sel);if(pic)pic.onchange=()=>{const f=pic.files[0];if(!f)return;act(async()=>{
     const b64=await shrink(f);const {error}=await sb.functions.invoke('score',{body:{round_id:cur.id,image_base64:b64}});
-    if(error){let m;try{const j=await error.context.json();m=j.error||j.message||j.msg}catch{}throw new Error(m||('送信に失敗しました('+((error.context&&error.context.status)||error.name)+')'))}},'AIが採点中…')};
+    if(error){let m;try{const j=await error.context.json();m=j.error||j.message||j.msg}catch{}throw new Error(m||('送信に失敗しました('+((error.context&&error.context.status)||error.name)+')'))}},'AIが採点中…')}});
   document.querySelectorAll('.vote button').forEach(b=>b.onclick=()=>act(async()=>{
     play('pop');const sid=b.dataset.s,v=+b.dataset.v,m=(D.votes.find(x=>x.submission_id===sid&&x.user_id===me)||{}).value;
     const r=m===v?await sb.from('votes').delete().eq('submission_id',sid).eq('user_id',me):await sb.from('votes').upsert({submission_id:sid,user_id:me,value:v},{onConflict:'submission_id,user_id'});
