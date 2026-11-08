@@ -53,7 +53,7 @@ button.pri:disabled{box-shadow:none}
 .cnt{counter-reset:n var(--n);animation:cnt 1s ease-out both}.cnt::before{content:counter(n)}
 @media (prefers-reduced-motion:reduce){.cnt{animation:none!important}}
 </style></head><body><main id="app"></main>
-<div class="meta" style="text-align:center;padding:0 0 24px">📸 写真はゲーム終了の約1時間後(終了しない場合は12時間後)に自動で削除されます<br><a href="https://www.youtube.com/@OctoJPstreamer" target="_blank" rel="noopener" style="color:var(--acc)">▶ YouTube</a> ・ <a href="https://x.com/octo_JPstreamer" target="_blank" rel="noopener" style="color:var(--acc)">𝕏 (旧Twitter)</a> ・ <a href="https://ko-fi.com/big_octopus" target="_blank" rel="noopener" style="color:var(--acc)">🙏 投げ銭する</a><br><a href="legal.html" target="_blank" rel="noopener" style="color:var(--acc)">利用規約・プライバシーポリシー</a><br>画面の版: 2026-10-31 j</div>
+<div class="meta" style="text-align:center;padding:0 0 24px">📸 写真はゲーム終了の約1時間後(終了しない場合は12時間後)に自動で削除されます<br><a href="https://www.youtube.com/@OctoJPstreamer" target="_blank" rel="noopener" style="color:var(--acc)">▶ YouTube</a> ・ <a href="https://x.com/octo_JPstreamer" target="_blank" rel="noopener" style="color:var(--acc)">𝕏 (旧Twitter)</a> ・ <a href="https://ko-fi.com/big_octopus" target="_blank" rel="noopener" style="color:var(--acc)">🙏 投げ銭する</a><br><a href="legal.html" target="_blank" rel="noopener" style="color:var(--acc)">利用規約・プライバシーポリシー</a><br>画面の版: 2026-10-31 k</div>
 <script src="config.js"></script>
 <script src="settings.js"></script>
 <script src="themes.js"></script>
@@ -279,7 +279,7 @@ function roomView(){
   let h=`<h1 class="t">${LOGO}${HB}</h1><div class="meta">ルーム <b>${R.code}</b> ・ ${D.players.length}人<button class="sm" id="sndb">${snd()?'🔊':'🔇'}</button><button class="sm" id="prof">名前・アバターを変更</button><button class="sm" id="leave">退出</button></div>`+(editing?`<div class="card"><b>名前とアバターを変更</b>${picker()}${nameIn()}<button class="pri" id="saveprof">保存</button></div>`:'');
   if(R.status==='finished')return h+`<div class="card"><b>🎉 最終結果</b>${totals()}<button class="pri" id="shrf" style="margin-top:8px">📤 結果をシェア</button></div>`;
   if(!cur){
-    h+=`<div class="card"><div class="meta">この合言葉かQRで友達を招待</div><div class="code">${R.code}</div><div id="qr"></div>
+    h+=`<div class="card"><div class="meta">この合言葉かQRで友達を招待</div><div class="code">${R.code}</div><div id="qr"></div><div style="display:flex;gap:8px;margin:10px 0"><button class="pri" id="cplink" style="flex:1">🔗 招待リンクをコピー</button>${navigator.share?'<button class="pri" id="shlink" style="flex:1;background:var(--card);color:var(--acc);border:2px solid var(--acc);box-shadow:none">📤 共有</button>':''}</div>
     <div>${D.players.map(p=>`<span class="chip">${av(p.avatar)} ${esc(p.nickname)}${p.user_id===me?'(あなた)':''}</span>`).join('')}</div></div>`;
     return h+(host?`<div class="card"><b>最初のお題</b>${form('ラウンド開始')}</div>`:'<div class="card meta">幹事がお題を決めるのを待っています…</div>');
   }
@@ -355,6 +355,12 @@ function bind(){
     play('pop');const sid=b.dataset.s,v=+b.dataset.v,m=(D.votes.find(x=>x.submission_id===sid&&x.user_id===me)||{}).value;
     const r=m===v?await sb.from('votes').delete().eq('submission_id',sid).eq('user_id',me):await sb.from('votes').upsert({submission_id:sid,user_id:me,value:v},{onConflict:'submission_id,user_id'});
     if(r.error)throw r.error}));
+  const inv=location.origin+location.pathname+'?r='+(D.room?D.room.code:'');
+  on('#cplink',async()=>{const b=$('#cplink');let ok=false;
+    try{await navigator.clipboard.writeText(inv);ok=true}catch(e){const ta=document.createElement('textarea');ta.value=inv;ta.style.cssText='position:fixed;opacity:0';document.body.appendChild(ta);ta.select();try{ok=document.execCommand('copy')}catch(_){}ta.remove()}
+    if(!ok){prompt('このURLをコピーして送ってください',inv);return}
+    b.textContent='✅ コピーしました';setTimeout(()=>{if(b.isConnected)b.textContent='🔗 招待リンクをコピー'},2000)});
+  on('#shlink',async()=>{try{await navigator.share({title:'コレトッテ!',text:'一緒に遊ぼう!',url:inv})}catch(e){}});
   const qr=$('#qr');if(qr&&window.QRCode)new QRCode(qr,{text:location.origin+location.pathname+'?r='+D.room.code,width:180,height:180});
   const cd=$('#cd');if(cd&&cur){const tick=()=>{const s=Math.round((new Date(cur.ends_at)-Date.now())/1000);cd.textContent=s>0?Math.floor(s/60)+':'+String(s%60).padStart(2,'0'):'時間切れ'};tick();timer=setInterval(tick,1000)}
 }
